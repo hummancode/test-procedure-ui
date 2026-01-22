@@ -1,6 +1,6 @@
 """
-Status Bar Widget - Row 4
-Timer + Progress + Status Emoji
+Status Bar Widget - Row 4 (PHASE 1 UPDATED)
+Timer + Progress + Status Emoji with enhanced spacing
 """
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QProgressBar
 from PyQt5.QtCore import Qt
@@ -29,7 +29,7 @@ class StatusBarWidget(QWidget):
         
     def _init_ui(self):
         """Initialize the UI components"""
-        # Set fixed height
+        # Set fixed height with better spacing
         self.setFixedHeight(config.ROW_4_HEIGHT)
         
         # Set background
@@ -40,10 +40,15 @@ class StatusBarWidget(QWidget):
             }}
         """)
         
-        # Main horizontal layout (4 equal sections)
+        # Main horizontal layout (4 equal sections) with enhanced padding
         main_layout = QHBoxLayout()
-        main_layout.setContentsMargins(10, 5, 10, 5)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(
+            config.ROW_4_PADDING_LEFT,
+            config.ROW_4_PADDING_TOP,
+            config.ROW_4_PADDING_RIGHT,
+            config.ROW_4_PADDING_BOTTOM
+        )
+        main_layout.setSpacing(config.ROW_4_SECTION_SPACING)
         
         # Section 1: Reserved
         self.reserved_section = self._create_reserved_section()
@@ -90,7 +95,7 @@ class StatusBarWidget(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(0)
         
-        # Timer label
+        # Timer label with larger font
         self.timer_label = QLabel("00:00")
         self.timer_label.setStyleSheet(f"""
             color: {config.Colors.SUCCESS};
@@ -112,16 +117,16 @@ class StatusBarWidget(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(5)
         
-        # Step counter label
+        # Step counter label with larger font
         self.step_label = QLabel(f"{config.Labels.STEP}: 0/0")
         self.step_label.setStyleSheet(f"""
             color: {config.Colors.TEXT_PRIMARY};
-            font-size: {config.FONT_SIZE}pt;
+            font-size: {config.FONT_SIZE_PROGRESS}pt;
             font-weight: bold;
         """)
         self.step_label.setAlignment(Qt.AlignCenter)
         
-        # Progress bar
+        # Progress bar with increased height
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(100)
@@ -135,7 +140,8 @@ class StatusBarWidget(QWidget):
                 background-color: {config.Colors.INPUT_BACKGROUND};
                 text-align: center;
                 color: {config.Colors.TEXT_PRIMARY};
-                height: 20px;
+                height: {config.PROGRESS_BAR_HEIGHT}px;
+                font-size: {config.FONT_SIZE}pt;
             }}
             QProgressBar::chunk {{
                 background-color: {config.Colors.ACCENT_BLUE};
@@ -155,16 +161,19 @@ class StatusBarWidget(QWidget):
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
         
-        # Emoji label
+        # Emoji label with larger size
         self.emoji_label = QLabel(config.EMOJI_NEUTRAL)
         self.emoji_label.setStyleSheet(f"""
-            font-size: 36pt;
+            font-size: {config.FONT_SIZE_EMOJI}pt;
             background-color: {config.Colors.INPUT_BACKGROUND};
-            border-radius: 30px;
+            border-radius: {config.EMOJI_BACKGROUND_SIZE // 2}px;
             padding: 10px;
         """)
         self.emoji_label.setAlignment(Qt.AlignCenter)
-        self.emoji_label.setFixedSize(60, 60)
+        self.emoji_label.setFixedSize(
+            config.EMOJI_BACKGROUND_SIZE,
+            config.EMOJI_BACKGROUND_SIZE
+        )
         
         layout.addWidget(self.emoji_label)
         widget.setLayout(layout)
@@ -235,8 +244,8 @@ class StatusBarWidget(QWidget):
         # Update background color
         bg_color = config.Colors.SUCCESS if is_happy else config.Colors.ERROR
         self.emoji_label.setStyleSheet(f"""
-            font-size: 36pt;
+            font-size: {config.FONT_SIZE_EMOJI}pt;
             background-color: {bg_color};
-            border-radius: 30px;
+            border-radius: {config.EMOJI_BACKGROUND_SIZE // 2}px;
             padding: 10px;
         """)

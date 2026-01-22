@@ -1,12 +1,15 @@
 """
-Main Window
+Main Window (PHASE 1 UPDATED)
 Main application window that orchestrates all widgets and managers
 """
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
-from ui.widgets import HeaderWidget, TitleWidget, ContentWidget, StatusBarWidget
+from ui.widgets.header_widget import HeaderWidget
+from ui.widgets.title_widget import TitleWidget
+from ui.widgets.content_widget import ContentWidget
+from ui.widgets.status_bar_widget import StatusBarWidget
 from managers import TestManager
 from models.enums import InputType, TimerStatus
 import config
@@ -44,10 +47,32 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(config.WINDOW_TITLE)
         self.setMinimumSize(config.WINDOW_MIN_WIDTH, config.WINDOW_MIN_HEIGHT)
         
-        # Set dark blue background
+        # Set dark blue background and theme
         self.setStyleSheet(f"""
             QMainWindow {{
                 background-color: {config.Colors.BACKGROUND_PRIMARY};
+            }}
+            
+            /* Style QMessageBox for dark theme */
+            QMessageBox {{
+                background-color: {config.Colors.BACKGROUND_SECONDARY};
+                color: {config.Colors.TEXT_PRIMARY};
+            }}
+            QMessageBox QLabel {{
+                color: {config.Colors.TEXT_PRIMARY};
+                font-size: {config.FONT_SIZE}pt;
+            }}
+            QMessageBox QPushButton {{
+                background-color: {config.Colors.BUTTON_PRIMARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                border: none;
+                border-radius: 5px;
+                padding: 8px 16px;
+                font-size: {config.FONT_SIZE}pt;
+                min-width: 80px;
+            }}
+            QMessageBox QPushButton:hover {{
+                background-color: {config.Colors.BUTTON_HOVER};
             }}
         """)
         
@@ -57,7 +82,7 @@ class MainWindow(QMainWindow):
         
         # Main vertical layout
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setContentsMargins(0, 0, 0, config.ROW_4_BOTTOM_MARGIN)
         main_layout.setSpacing(0)
         
         # Create all row widgets
@@ -84,8 +109,12 @@ class MainWindow(QMainWindow):
         self.test_manager.test_completed.connect(self._on_test_completed)
         self.test_manager.result_submitted.connect(self._on_result_submitted)
         
-        # Content widget signals
+        # Content widget signals - UPDATED for flexible workflow
+        # New signature: (result_value, checkbox_value, comment, is_valid)
         self.content_widget.result_submitted.connect(self._on_user_submit_result)
+        
+        # Emoji update signal - NEW: Update emoji when YAZ button is clicked
+        self.content_widget.emoji_update_requested.connect(self._on_emoji_update_requested)
         
         logger.debug("Signals connected")
     
@@ -108,7 +137,7 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.critical(
                 self,
-                "Hata",
+                config.Labels.ERROR_TITLE,
                 f"Test dosyası yüklenemedi: {filepath}"
             )
             logger.error(f"Failed to load test procedure: {filepath}")
@@ -120,7 +149,7 @@ class MainWindow(QMainWindow):
         if not self.test_manager.steps:
             QMessageBox.warning(
                 self,
-                "Uyarı",
+                config.Labels.WARNING_TITLE,
                 "Test prosedürü yüklenmedi!"
             )
             return
@@ -131,7 +160,7 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.critical(
                 self,
-                "Hata",
+                config.Labels.ERROR_TITLE,
                 "Test başlatılamadı!"
             )
     
@@ -179,6 +208,12 @@ class MainWindow(QMainWindow):
         # Update timer display
         self.status_bar_widget.update_timer(remaining_seconds, timer_status)
         
+        # Only update emoji if no result has been written yet
+        # (YAZ button sets the emoji and shouldn't be overridden by timer)
+        if self.content_widget.has_result_written():
+            # Result already written - don't override emoji
+            return
+        
         # Update emoji based on timer
         if remaining_seconds <= 0:
             self.status_bar_widget.update_emoji(is_happy=False)
@@ -190,22 +225,64 @@ class MainWindow(QMainWindow):
             else:
                 self.status_bar_widget.update_emoji(is_happy=True)
     
-    def _on_user_submit_result(self, result_value):
+    def _on_user_submit_result(self, result_value, checkbox_value, comment, is_valid):
         """
-        Handle user submitting a result.
+        Handle user submitting a result (UPDATED for flexible workflow).
         
         Args:
-            result_value: The result value entered by user
+            result_value: Numeric result value (or None)
+            checkbox_value: "PASS" or "FAIL" (or None)
+            comment: Comment text (may be empty string)
+            is_valid: True if valid, False if failed, None if N/A
         """
-        success = self.test_manager.submit_result(result_value)
+        # Determine the actual result to submit
+        # Priority: checkbox_value > result_value
+        final_result = checkbox_value if checkbox_value is not None else result_value
         
-        if not success:
+        # Get current step
+        current_step = self.test_manager.get_current_step()
+        if not current_step:
+            return
+        
+        # Save comment if provided
+        if comment:
+            current_step.comment = comment
+            logger.info(f"Comment saved: {comment}")
+        
+        # Determine test status based on is_valid
+        if is_valid is None:
+            # No input required - intermediate step
+            test_status = "not_applicable"
+        elif is_valid is True:
+            # Valid input - passed
+            test_status = "passed"
+        else:
+            # Invalid input or FAIL checkbox - failed
+            test_status = "failed"
+        
+        # Submit result to test manager with status
+        success = self.test_manager.submit_result(final_result, test_status)
+        
+        if success:
+            logger.info(f"Step completed with status: {test_status}")
+        else:
             QMessageBox.warning(
                 self,
-                "Uyarı",
+                config.Labels.WARNING_TITLE,
                 config.Labels.INVALID_INPUT
             )
-            logger.warning("Invalid input rejected")
+            logger.warning("Failed to submit result")
+    
+    def _on_emoji_update_requested(self, is_happy: bool):
+        """
+        Handle emoji update request from content widget.
+        Called when YAZ button writes a result.
+        
+        Args:
+            is_happy: True for happy, False for sad
+        """
+        self.status_bar_widget.update_emoji(is_happy)
+        logger.debug(f"Emoji updated: {'happy' if is_happy else 'sad'}")
     
     def _on_result_submitted(self, step_index: int, result_value, status: str):
         """
@@ -228,7 +305,7 @@ class MainWindow(QMainWindow):
         """Handle test completion"""
         QMessageBox.information(
             self,
-            "Tamamlandı",
+            config.Labels.SUCCESS_TITLE,
             config.Labels.TEST_COMPLETE
         )
         logger.info("Test procedure completed")

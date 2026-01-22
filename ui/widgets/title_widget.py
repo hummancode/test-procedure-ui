@@ -1,6 +1,6 @@
 """
-Title Widget - Row 2
-Displays current test step title
+Title Widget - Row 2 (PHASE 1 UPDATED)
+Displays current test step title with proper padding
 """
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PyQt5.QtCore import Qt
@@ -34,9 +34,14 @@ class TitleWidget(QWidget):
             }}
         """)
         
-        # Create layout
+        # Create layout with padding
         layout = QHBoxLayout()
-        layout.setContentsMargins(10, 0, 10, 0)
+        layout.setContentsMargins(
+            config.ROW_2_PADDING_LEFT,
+            config.ROW_2_PADDING_TOP,
+            config.ROW_2_PADDING_RIGHT,
+            config.ROW_2_PADDING_BOTTOM
+        )
         
         # Create title label
         self.title_label = QLabel("---")
@@ -46,8 +51,6 @@ class TitleWidget(QWidget):
             color: {config.Colors.TEXT_PRIMARY};
         """)
         self.title_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        
-        # Enable text wrapping if needed
         self.title_label.setWordWrap(False)
         
         layout.addWidget(self.title_label)

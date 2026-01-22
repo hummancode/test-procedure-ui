@@ -1,6 +1,6 @@
 """
-TestStep Data Model
-Represents a single step in the test procedure
+TestStep Data Model (PHASE 1 UPDATED)
+Represents a single step in the test procedure with comment support
 """
 from typing import Optional, Dict, Any
 from models.enums import TestStatus, InputType
@@ -22,6 +22,7 @@ class TestStep:
         status: Current status of the step (TestStatus enum)
         result_value: User-entered result value
         actual_duration: Actual time taken to complete (seconds)
+        comment: Optional user comment about the step (PHASE 1 addition)
     """
     
     def __init__(
@@ -49,6 +50,7 @@ class TestStep:
         self.result_value: Optional[Any] = None
         self.actual_duration: Optional[int] = None
         self.start_time: Optional[float] = None
+        self.comment: str = ""  # PHASE 1: Added comment field
         
     @property
     def requires_input(self) -> bool:
@@ -68,7 +70,8 @@ class TestStep:
             'input_validation': self.input_validation,
             'status': self.status.value,
             'result_value': self.result_value,
-            'actual_duration': self.actual_duration
+            'actual_duration': self.actual_duration,
+            'comment': self.comment  # PHASE 1: Include comment in serialization
         }
     
     @classmethod
@@ -92,6 +95,8 @@ class TestStep:
             step.result_value = data['result_value']
         if 'actual_duration' in data:
             step.actual_duration = data['actual_duration']
+        if 'comment' in data:  # PHASE 1: Restore comment if present
+            step.comment = data['comment']
             
         return step
     

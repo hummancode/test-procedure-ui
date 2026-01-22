@@ -1,5 +1,5 @@
 """
-Enums and Constants for Test Procedure Application
+Enums for Test Procedure Application (PHASE 1 UPDATED)
 """
 from enum import Enum
 
@@ -10,20 +10,20 @@ class TestStatus(Enum):
     IN_PROGRESS = "in_progress"
     PASSED = "passed"
     FAILED = "failed"
-    SKIPPED = "skipped"
+    NOT_APPLICABLE = "not_applicable"  # For intermediate steps with no validation
 
 
 class InputType(Enum):
     """Type of input required for a test step"""
-    NONE = "none"           # No input required
-    NUMBER = "number"       # Numeric input
-    PASS_FAIL = "pass_fail" # Pass/Fail buttons
-    COMMENT = "comment"     # Text comment (optional)
+    NONE = "none"           # No input required (intermediate step)
+    NUMBER = "number"       # Numeric input with validation
+    PASS_FAIL = "pass_fail" # Pass/Fail checkboxes
+    TEXT = "text"           # Free text input (future)
 
 
 class TimerStatus(Enum):
-    """Timer status based on remaining time"""
+    """Status of the timer"""
     NORMAL = "normal"       # > 20% time remaining
     WARNING = "warning"     # 10-20% time remaining
     CRITICAL = "critical"   # < 10% time remaining
-    OVERTIME = "overtime"   # Timer has expired
+    OVERTIME = "overtime"   # Time expired (negative)

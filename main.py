@@ -24,7 +24,7 @@ def main():
     
     # Create main window
     window = MainWindow()
-    
+
     # Load test procedure
     test_file = 'data/sample_test.json'
     if window.load_test_procedure(test_file):

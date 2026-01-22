@@ -1,12 +1,12 @@
 """
-Content Widget - Row 3
-Main content area: Image + Description + Input
+Content Widget - Row 3 (PHASE 1 UPDATED)
+Main content area: Image + Description + Input + Buttons
 """
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel, 
-                             QTextEdit, QLineEdit, QPushButton, QScrollArea,
-                             QMessageBox, QDoubleSpinBox)
+                             QTextEdit, QLineEdit, QPushButton, QCheckBox,
+                             QMessageBox)
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtGui import QPixmap
 from typing import Optional
 import os
 import config
@@ -21,22 +21,25 @@ class ContentWidget(QWidget):
     Row 3: Main Content Area
     
     Left side (40%): Test step image
-    Right side (60%): Description + Input + Submit button
+    Right side (60%): Description + Input + Buttons
     
     Signals:
-        result_submitted: Emitted when user submits result (result_value)
+        result_submitted: Emitted when user clicks İlerle and validation passes
+                         (result_value, checkbox_value, comment)
     """
     
-    result_submitted = pyqtSignal(object)  # result_value
+    result_submitted = pyqtSignal(object, object, str, object)  # result, checkbox, comment, is_valid
+    emoji_update_requested = pyqtSignal(bool)  # is_happy - NEW signal for immediate emoji updates
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_input_type = InputType.NONE
+        self.current_validation = {}
+        self.result_written = False  # NEW: Track if YAZ button has been clicked
         self._init_ui()
         
     def _init_ui(self):
         """Initialize the UI components"""
-        # Set background
         self.setStyleSheet(f"""
             QWidget {{
                 background-color: {config.Colors.BACKGROUND_PRIMARY};
@@ -93,7 +96,12 @@ class ContentWidget(QWidget):
         container = QWidget()
         
         layout = QVBoxLayout()
-        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setContentsMargins(
+            config.ROW_3_DESCRIPTION_PADDING,
+            config.ROW_3_DESCRIPTION_PADDING,
+            config.ROW_3_DESCRIPTION_PADDING,
+            config.ROW_3_DESCRIPTION_PADDING
+        )
         layout.setSpacing(15)
         
         # Description area (scrollable)
@@ -106,16 +114,16 @@ class ContentWidget(QWidget):
                 border: 1px solid {config.Colors.BORDER_COLOR};
                 border-radius: 5px;
                 padding: 10px;
-                font-size: {config.FONT_SIZE}pt;
+                font-size: {config.FONT_SIZE_DESCRIPTION}pt;
                 line-height: 1.5;
             }}
         """)
         
-        layout.addWidget(self.description_area, 70)  # 70% of space
+        layout.addWidget(self.description_area, 60)  # 60% of space
         
-        # Input section (conditional, will be shown/hidden)
+        # Input section (conditional)
         self.input_container = self._create_input_container()
-        layout.addWidget(self.input_container, 30)  # 30% of space
+        layout.addWidget(self.input_container, 40)  # 40% of space
         
         container.setLayout(layout)
         return container
@@ -126,39 +134,112 @@ class ContentWidget(QWidget):
         
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
-        
-        # Input label
-        self.input_label = QLabel(config.Labels.TEST_RESULT)
-        self.input_label.setStyleSheet(f"""
-            color: {config.Colors.TEXT_PRIMARY};
-            font-size: {config.FONT_SIZE}pt;
-            font-weight: bold;
-        """)
+        layout.setSpacing(15)
         
         # Input widget placeholder (will be replaced based on type)
         self.input_widget_container = QWidget()
         self.input_widget_layout = QVBoxLayout()
         self.input_widget_layout.setContentsMargins(0, 0, 0, 0)
+        self.input_widget_layout.setSpacing(10)
         self.input_widget_container.setLayout(self.input_widget_layout)
         
-        # Error message label
+        # Error message label (for inline validation errors)
         self.error_label = QLabel()
-        self.error_label.setStyleSheet(f"color: {config.Colors.ERROR}; font-size: 9pt;")
+        self.error_label.setStyleSheet(f"""
+            color: {config.Colors.ERROR};
+            font-size: {config.FONT_SIZE_ERROR}pt;
+        """)
+        self.error_label.setWordWrap(True)
         self.error_label.hide()
         
-        # Submit button
-        self.submit_button = QPushButton(config.Labels.SUBMIT)
-        self.submit_button.setStyleSheet(f"""
+        # Comment section (always present, hidden by default)
+        self.comment_container = self._create_comment_container()
+        
+        # Button container
+        button_container = self._create_button_container()
+        
+        # Add to layout
+        layout.addWidget(self.input_widget_container)
+        layout.addWidget(self.error_label)
+        layout.addWidget(self.comment_container)
+        layout.addWidget(button_container)
+        
+        container.setLayout(layout)
+        container.hide()  # Hidden by default
+        
+        return container
+    
+    def _create_comment_container(self) -> QWidget:
+        """Create comment text area (hidden by default)"""
+        container = QWidget()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+        
+        self.comment_text = QTextEdit()
+        self.comment_text.setPlaceholderText(config.Labels.COMMENT_PLACEHOLDER)
+        self.comment_text.setMaximumHeight(config.COMMENT_FIELD_HEIGHT)
+        self.comment_text.setStyleSheet(f"""
+            QTextEdit {{
+                background-color: {config.Colors.INPUT_BACKGROUND};
+                color: {config.Colors.TEXT_PRIMARY};
+                border: 2px solid {config.Colors.BORDER_COLOR};
+                border-radius: 5px;
+                padding: 8px;
+                font-size: {config.FONT_SIZE}pt;
+            }}
+        """)
+        self.comment_text.hide()
+        
+        layout.addWidget(self.comment_text)
+        container.setLayout(layout)
+        
+        return container
+    
+    def _create_button_container(self) -> QWidget:
+        """Create button container with YORUM EKLE and İlerle buttons"""
+        container = QWidget()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        
+        # YORUM EKLE button (left)
+        self.comment_button = QPushButton(config.Labels.ADD_COMMENT)
+        self.comment_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {config.Colors.BUTTON_SECONDARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                border: none;
+                border-radius: 5px;
+                padding: 10px 20px;
+                font-size: {config.FONT_SIZE}pt;
+                font-weight: bold;
+                min-width: {config.BUTTON_COMMENT_WIDTH}px;
+                min-height: {config.BUTTON_COMMENT_HEIGHT}px;
+            }}
+            QPushButton:hover {{
+                background-color: #9e9e9e;
+            }}
+        """)
+        self.comment_button.clicked.connect(self._toggle_comment)
+        
+        # Spacer
+        layout.addWidget(self.comment_button)
+        layout.addStretch()
+        
+        # İlerle button (right)
+        self.proceed_button = QPushButton(config.Labels.PROCEED)
+        self.proceed_button.setStyleSheet(f"""
             QPushButton {{
                 background-color: {config.Colors.BUTTON_PRIMARY};
                 color: {config.Colors.TEXT_PRIMARY};
                 border: none;
                 border-radius: 5px;
                 padding: 12px 24px;
-                font-size: {config.FONT_SIZE}pt;
+                font-size: {config.FONT_SIZE_BUTTON}pt;
                 font-weight: bold;
-                min-width: 200px;
+                min-width: {config.BUTTON_PROCEED_WIDTH}px;
+                min-height: {config.BUTTON_PROCEED_HEIGHT}px;
             }}
             QPushButton:hover {{
                 background-color: {config.Colors.BUTTON_HOVER};
@@ -167,23 +248,22 @@ class ContentWidget(QWidget):
                 background-color: {config.Colors.ACCENT_BLUE};
             }}
         """)
-        self.submit_button.clicked.connect(self._on_submit_clicked)
+        self.proceed_button.clicked.connect(self._on_proceed_clicked)
         
-        # Add to layout
-        layout.addWidget(self.input_label)
-        layout.addWidget(self.input_widget_container)
-        layout.addWidget(self.error_label)
-        
-        # Right-align submit button
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(self.submit_button)
-        layout.addLayout(button_layout)
+        layout.addWidget(self.proceed_button)
         
         container.setLayout(layout)
-        container.hide()  # Hidden by default
-        
         return container
+    
+    def _toggle_comment(self):
+        """Toggle comment field visibility"""
+        if self.comment_text.isVisible():
+            self.comment_text.hide()
+            self.comment_button.setText(config.Labels.ADD_COMMENT)
+        else:
+            self.comment_text.show()
+            self.comment_text.setFocus()
+            self.comment_button.setText(config.Labels.HIDE_COMMENT)
     
     def set_step_content(self, step_name: str, description: str, image_path: Optional[str],
                         input_type: InputType, input_label: str = "Test Sonucu",
@@ -205,43 +285,58 @@ class ContentWidget(QWidget):
         # Update image
         self._load_image(image_path)
         
-        # Update input section
+        # Store current validation rules
         self.current_input_type = input_type
-        self.input_label.setText(input_label)
+        self.current_validation = input_validation or {}
         
+        # Update input section
         if input_type != InputType.NONE:
-            self._setup_input_widget(input_type, input_validation or {})
+            self._setup_input_widget(input_type, self.current_validation)
             self.input_container.show()
         else:
             self.input_container.hide()
         
+        # Reset comment
+        self.comment_text.clear()
+        self.comment_text.hide()
+        self.comment_button.setText(config.Labels.ADD_COMMENT)
+        
         # Clear error
         self.error_label.hide()
+        
+        # Reset result_written flag for new step
+        self.result_written = False
         
         logger.info(f"Content updated for step: {step_name}")
     
     def _setup_input_widget(self, input_type: InputType, validation: dict):
         """Setup input widget based on type"""
-        # Clear existing widget
+        # Clear existing widgets
         for i in reversed(range(self.input_widget_layout.count())): 
-            self.input_widget_layout.itemAt(i).widget().setParent(None)
+            widget = self.input_widget_layout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
         
         if input_type == InputType.NUMBER:
             self._create_number_input(validation)
         elif input_type == InputType.PASS_FAIL:
             self._create_pass_fail_input()
-        elif input_type == InputType.COMMENT:
-            self._create_comment_input()
     
     def _create_number_input(self, validation: dict):
-        """Create numeric input field"""
-        self.number_input = QDoubleSpinBox()
-        self.number_input.setDecimals(2)
-        self.number_input.setMinimum(validation.get('min', -999999))
-        self.number_input.setMaximum(validation.get('max', 999999))
-        self.number_input.setValue(validation.get('min', 0))
+        """Create NUMBER input: [Input] [YAZ] Sonuç: [Result]"""
+        # Container for horizontal layout
+        container = QWidget()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        
+        # Input field
+        self.number_input = QLineEdit()
+        self.number_input.setPlaceholderText(config.Labels.ENTER_VALUE)
+        self.number_input.setFixedWidth(config.INPUT_FIELD_WIDTH)
+        self.number_input.setFixedHeight(config.INPUT_FIELD_HEIGHT)
         self.number_input.setStyleSheet(f"""
-            QDoubleSpinBox {{
+            QLineEdit {{
                 background-color: {config.Colors.INPUT_BACKGROUND};
                 color: {config.Colors.TEXT_PRIMARY};
                 border: 2px solid {config.Colors.BORDER_COLOR};
@@ -249,115 +344,349 @@ class ContentWidget(QWidget):
                 padding: 8px;
                 font-size: {config.FONT_SIZE}pt;
             }}
+            QLineEdit:focus {{
+                border: 2px solid {config.Colors.ACCENT_BLUE};
+            }}
         """)
         
-        self.input_widget_layout.addWidget(self.number_input)
+        # YAZ button
+        self.write_button = QPushButton(config.Labels.WRITE)
+        self.write_button.setFixedWidth(config.BUTTON_WRITE_WIDTH)
+        self.write_button.setFixedHeight(config.BUTTON_WRITE_HEIGHT)
+        self.write_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {config.Colors.BUTTON_PRIMARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                border: none;
+                border-radius: 5px;
+                font-size: {config.FONT_SIZE}pt;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {config.Colors.BUTTON_HOVER};
+            }}
+        """)
+        self.write_button.clicked.connect(self._on_write_clicked)
+        
+        # Result display
+        self.result_display = QLabel("")
+        self.result_display.setMinimumWidth(config.RESULT_DISPLAY_MIN_WIDTH)
+        self.result_display.setStyleSheet(f"""
+            QLabel {{
+                color: {config.Colors.SUCCESS};
+                font-size: {config.FONT_SIZE}pt;
+                font-weight: bold;
+            }}
+        """)
+        
+        # Add to layout
+        layout.addWidget(self.number_input)
+        layout.addWidget(self.write_button)
+        layout.addWidget(QLabel(config.Labels.RESULT_LABEL))
+        layout.addWidget(self.result_display)
+        layout.addStretch()
+        
+        container.setLayout(layout)
+        self.input_widget_layout.addWidget(container)
     
     def _create_pass_fail_input(self):
-        """Create PASS/FAIL buttons"""
-        button_container = QWidget()
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(10)
+        """Create PASS_FAIL checkboxes with YAZ button: [GEÇTİ] [KALDI] [YAZ] Sonuç: [Result]"""
+        container = QWidget()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(config.CHECKBOX_SPACING)
         
-        # PASS button
-        self.pass_button = QPushButton(config.Labels.PASS)
-        self.pass_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {config.Colors.SUCCESS};
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 15px 30px;
-                font-size: {config.FONT_SIZE_LARGE}pt;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: #66bb6a;
-            }}
-        """)
-        self.pass_button.clicked.connect(lambda: self._on_pass_fail_clicked("PASS"))
-        
-        # FAIL button
-        self.fail_button = QPushButton(config.Labels.FAIL)
-        self.fail_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {config.Colors.ERROR};
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 15px 30px;
-                font-size: {config.FONT_SIZE_LARGE}pt;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: #ef5350;
-            }}
-        """)
-        self.fail_button.clicked.connect(lambda: self._on_pass_fail_clicked("FAIL"))
-        
-        button_layout.addWidget(self.pass_button)
-        button_layout.addWidget(self.fail_button)
-        button_container.setLayout(button_layout)
-        
-        self.input_widget_layout.addWidget(button_container)
-        
-        # Hide submit button for PASS/FAIL (buttons submit directly)
-        self.submit_button.hide()
-    
-    def _create_comment_input(self):
-        """Create comment text area"""
-        self.comment_input = QTextEdit()
-        self.comment_input.setPlaceholderText(config.Labels.COMMENT_PLACEHOLDER)
-        self.comment_input.setMaximumHeight(80)
-        self.comment_input.setStyleSheet(f"""
-            QTextEdit {{
-                background-color: {config.Colors.INPUT_BACKGROUND};
+        # GEÇTİ checkbox
+        self.pass_checkbox = QCheckBox(config.Labels.PASS)
+        self.pass_checkbox.setStyleSheet(f"""
+            QCheckBox {{
                 color: {config.Colors.TEXT_PRIMARY};
-                border: 2px solid {config.Colors.BORDER_COLOR};
-                border-radius: 5px;
-                padding: 8px;
                 font-size: {config.FONT_SIZE}pt;
+                spacing: 10px;
+            }}
+            QCheckBox::indicator {{
+                width: 25px;
+                height: 25px;
+            }}
+        """)
+        self.pass_checkbox.stateChanged.connect(lambda state: self._on_checkbox_changed(state, 'pass'))
+        
+        # KALDI checkbox
+        self.fail_checkbox = QCheckBox(config.Labels.FAIL)
+        self.fail_checkbox.setStyleSheet(f"""
+            QCheckBox {{
+                color: {config.Colors.TEXT_PRIMARY};
+                font-size: {config.FONT_SIZE}pt;
+                spacing: 10px;
+            }}
+            QCheckBox::indicator {{
+                width: 25px;
+                height: 25px;
+            }}
+        """)
+        self.fail_checkbox.stateChanged.connect(lambda state: self._on_checkbox_changed(state, 'fail'))
+        
+        # YAZ button for checkboxes
+        self.checkbox_write_button = QPushButton(config.Labels.WRITE)
+        self.checkbox_write_button.setFixedWidth(config.BUTTON_WRITE_WIDTH)
+        self.checkbox_write_button.setFixedHeight(config.BUTTON_WRITE_HEIGHT)
+        self.checkbox_write_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {config.Colors.BUTTON_PRIMARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                border: none;
+                border-radius: 5px;
+                font-size: {config.FONT_SIZE}pt;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {config.Colors.BUTTON_HOVER};
+            }}
+        """)
+        self.checkbox_write_button.clicked.connect(self._on_checkbox_write_clicked)
+        
+        # Result display for checkbox
+        self.checkbox_result_display = QLabel("")
+        self.checkbox_result_display.setMinimumWidth(config.RESULT_DISPLAY_MIN_WIDTH)
+        self.checkbox_result_display.setStyleSheet(f"""
+            QLabel {{
+                color: {config.Colors.SUCCESS};
+                font-size: {config.FONT_SIZE}pt;
+                font-weight: bold;
             }}
         """)
         
-        self.input_widget_layout.addWidget(self.comment_input)
-    
-    def _on_pass_fail_clicked(self, result: str):
-        """Handle PASS/FAIL button click"""
-        self.result_submitted.emit(result)
-        logger.info(f"PASS/FAIL result: {result}")
-    
-    def _on_submit_clicked(self):
-        """Handle submit button click"""
-        result = self._get_input_value()
+        # Add to layout
+        layout.addWidget(self.pass_checkbox)
+        layout.addWidget(self.fail_checkbox)
+        layout.addWidget(self.checkbox_write_button)
+        layout.addWidget(QLabel(config.Labels.RESULT_LABEL))
+        layout.addWidget(self.checkbox_result_display)
+        layout.addStretch()
         
-        if result is None:
-            self.error_label.setText(config.Labels.INVALID_INPUT)
+        container.setLayout(layout)
+        self.input_widget_layout.addWidget(container)
+    
+    def _on_checkbox_changed(self, state, checkbox_type):
+        """Handle checkbox state change (mutually exclusive)"""
+        if state == Qt.Checked:
+            if checkbox_type == 'pass':
+                self.fail_checkbox.setChecked(False)
+            else:
+                self.pass_checkbox.setChecked(False)
+    
+    def _on_checkbox_write_clicked(self):
+        """Handle YAZ button click for checkboxes"""
+        # Check if at least one checkbox is selected
+        if not (self.pass_checkbox.isChecked() or self.fail_checkbox.isChecked()):
+            self.error_label.setText(config.Labels.NO_CHECKBOX_SELECTED)
             self.error_label.show()
             return
         
+        # Clear error
         self.error_label.hide()
-        self.result_submitted.emit(result)
-        logger.info(f"Result submitted: {result}")
-    
-    def _get_input_value(self) -> Optional[object]:
-        """Get current input value based on type"""
-        if self.current_input_type == InputType.NUMBER:
-            return self.number_input.value()
-        elif self.current_input_type == InputType.COMMENT:
-            text = self.comment_input.toPlainText().strip()
-            return text if text else None
-        elif self.current_input_type == InputType.PASS_FAIL:
-            return None  # Handled by buttons
         
-        return None
+        # Determine which checkbox is selected
+        if self.pass_checkbox.isChecked():
+            result_text = config.Labels.PASS  # "GEÇTİ"
+            result_color = config.Colors.SUCCESS  # Green
+            is_happy = True
+        else:  # fail_checkbox is checked
+            result_text = config.Labels.FAIL  # "KALDI"
+            result_color = config.Colors.ERROR  # Red
+            is_happy = False
+        
+        # Write to result display
+        self.checkbox_result_display.setText(result_text)
+        self.checkbox_result_display.setStyleSheet(f"""
+            QLabel {{
+                color: {result_color};
+                font-size: {config.FONT_SIZE}pt;
+                font-weight: bold;
+            }}
+        """)
+        
+        # UPDATE EMOJI immediately when checkbox result is written
+        self._update_parent_emoji(is_happy)
+        
+        # Set flag to prevent timer from overriding
+        self.result_written = True
+        
+        logger.info(f"Checkbox result written: {result_text}")
+    
+    def _on_write_clicked(self):
+        """Handle YAZ button click - ALLOWS INVALID VALUES"""
+        input_text = self.number_input.text().strip()
+        
+        if not input_text:
+            self.error_label.setText(config.Labels.ENTER_VALUE_FIRST)
+            self.error_label.show()
+            return
+        
+        # Try to parse as number
+        try:
+            value = float(input_text)
+        except ValueError:
+            self.error_label.setText(config.Labels.INVALID_NUMBER)
+            self.error_label.show()
+            return
+        
+        # Check if value is in valid range
+        is_valid, error_msg = self._check_number_range(value)
+        
+        if not is_valid:
+            # CHANGED: Show warning but ALLOW writing the value
+            self.error_label.setText(f"⚠️ {error_msg} (Değer kaydedilecek ama TEST BAŞARISIZ)")
+            self.error_label.setStyleSheet(f"""
+                color: {config.Colors.WARNING};
+                font-size: {config.FONT_SIZE_ERROR}pt;
+                font-weight: bold;
+            """)
+            self.error_label.show()
+            
+            # Write to result display but in ORANGE (warning color)
+            self.result_display.setText(input_text)
+            self.result_display.setStyleSheet(f"""
+                QLabel {{
+                    color: {config.Colors.WARNING};
+                    font-size: {config.FONT_SIZE}pt;
+                    font-weight: bold;
+                }}
+            """)
+            
+            # UPDATE EMOJI to sad (invalid = failed)
+            self._update_parent_emoji(is_happy=False)
+            
+            # Set flag to prevent timer from overriding
+            self.result_written = True
+        else:
+            # Valid value - clear error
+            self.error_label.hide()
+            
+            # Write to result display in GREEN
+            self.result_display.setText(input_text)
+            self.result_display.setStyleSheet(f"""
+                QLabel {{
+                    color: {config.Colors.SUCCESS};
+                    font-size: {config.FONT_SIZE}pt;
+                    font-weight: bold;
+                }}
+            """)
+            
+            # UPDATE EMOJI to happy (valid = passed)
+            self._update_parent_emoji(is_happy=True)
+            
+            # Set flag to prevent timer from overriding
+            self.result_written = True
+        
+        logger.info(f"Value written to result: {input_text} (valid={is_valid})")
+    
+    def _update_parent_emoji(self, is_happy: bool):
+        """
+        Request parent window to update emoji.
+        Called when YAZ button writes a result.
+        
+        Args:
+            is_happy: True for happy face, False for sad face
+        """
+        self.emoji_update_requested.emit(is_happy)
+    
+    def _check_number_range(self, value: float) -> tuple:
+        """
+        Check if number is in valid range.
+        Returns: (is_valid, error_message)
+        Does NOT prevent invalid values, just checks them.
+        """
+        min_val = self.current_validation.get('min')
+        max_val = self.current_validation.get('max')
+        
+        if min_val is not None and value < min_val:
+            return (False, config.Labels.VALUE_TOO_LOW.format(min_val))
+        
+        if max_val is not None and value > max_val:
+            return (False, config.Labels.VALUE_TOO_HIGH.format(max_val))
+        
+        return (True, "")
+    
+    def _on_proceed_clicked(self):
+        """Handle İlerle button click with validation"""
+        # Validate based on input type (only checks if required fields are filled)
+        is_valid, error_msg = self._validate_before_proceed()
+        
+        if not is_valid:
+            # Show popup warning
+            QMessageBox.warning(
+                self,
+                config.Labels.WARNING_TITLE,
+                error_msg
+            )
+            return
+        
+        # Get values and determine if they pass validation criteria
+        result_value = None
+        checkbox_value = None
+        is_value_valid = True  # NEW: Track if value meets criteria
+        
+        if self.current_input_type == InputType.NUMBER:
+            result_value = self.result_display.text()
+            
+            # Check if the value is within valid range
+            try:
+                value = float(result_value)
+                is_value_valid, _ = self._check_number_range(value)
+            except ValueError:
+                is_value_valid = False
+                
+        elif self.current_input_type == InputType.PASS_FAIL:
+            # Get result from display, not directly from checkboxes
+            result_text = self.checkbox_result_display.text()
+            
+            if result_text == config.Labels.PASS:  # "GEÇTİ"
+                checkbox_value = "PASS"
+                is_value_valid = True
+            elif result_text == config.Labels.FAIL:  # "KALDI"
+                checkbox_value = "FAIL"
+                is_value_valid = False
+        
+        elif self.current_input_type == InputType.NONE:
+            # No input required - mark as not applicable
+            is_value_valid = None  # None means N/A
+        
+        # Get comment
+        comment = self.comment_text.toPlainText().strip()
+        
+        # Emit signal with validation status
+        # NEW signature: (result_value, checkbox_value, comment, is_valid)
+        self.result_submitted.emit(result_value, checkbox_value, comment, is_value_valid)
+        logger.info(f"Result submitted - Value: {result_value}, Checkbox: {checkbox_value}, "
+                   f"Comment: {comment}, Valid: {is_value_valid}")
+    
+    def _validate_before_proceed(self) -> tuple:
+        """
+        Validate required inputs before proceeding.
+        Returns: (is_valid, error_message)
+        """
+        if self.current_input_type == InputType.NUMBER:
+            if not self.result_display.text().strip():
+                return (False, config.Labels.NO_VALUE_WRITTEN)
+        
+        elif self.current_input_type == InputType.PASS_FAIL:
+            # Check result display, not checkboxes
+            if not self.checkbox_result_display.text().strip():
+                return (False, config.Labels.NO_CHECKBOX_SELECTED)
+        
+        # No input required or validation passed
+        return (True, "")
+    
+    def has_result_written(self) -> bool:
+        """Check if YAZ button has been clicked and result written"""
+        return self.result_written
     
     def _load_image(self, image_path: Optional[str]):
         """Load and display image"""
         if image_path and os.path.exists(image_path):
             pixmap = QPixmap(image_path)
             if not pixmap.isNull():
-                # Scale to fit while maintaining aspect ratio
                 scaled_pixmap = pixmap.scaled(
                     self.image_label.size(),
                     Qt.KeepAspectRatio,
@@ -367,12 +696,10 @@ class ContentWidget(QWidget):
                 logger.debug(f"Image loaded: {image_path}")
                 return
         
-        # Load placeholder if image not found
         self._load_placeholder_image()
     
     def _load_placeholder_image(self):
         """Load placeholder image or show text"""
-        # For now, just show text placeholder
         self.image_label.setText("Görsel Yok")
         self.image_label.setStyleSheet(f"""
             color: {config.Colors.TEXT_SECONDARY};

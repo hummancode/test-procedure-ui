@@ -1,6 +1,6 @@
 """
-Header Widget - Row 1
-Displays session metadata (stock number, serial, station, SIP, timestamp)
+Header Widget - Row 1 (PHASE 1 UPDATED)
+Displays session metadata with larger fonts
 """
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PyQt5.QtCore import QTimer, Qt
@@ -40,7 +40,10 @@ class HeaderWidget(QWidget):
         
         # Create layout
         layout = QHBoxLayout()
-        layout.setContentsMargins(10, 0, 10, 0)
+        layout.setContentsMargins(
+            config.ROW_1_PADDING_H, 0,
+            config.ROW_1_PADDING_H, 0
+        )
         layout.setSpacing(15)
         
         # Create labels
@@ -50,13 +53,10 @@ class HeaderWidget(QWidget):
         self.sip_label = QLabel(f"{config.Labels.SIP}: ---")
         self.datetime_label = QLabel(self._format_datetime())
         
-        # Make label text bold for identifiers
+        # Style labels with larger font
         font_style = f"font-size: {config.FONT_SIZE}pt;"
-        for label in [self.stock_label, self.serial_label, self.station_label, self.sip_label]:
+        for label in [self.stock_label, self.serial_label, self.station_label, self.sip_label, self.datetime_label]:
             label.setStyleSheet(font_style)
-        
-        # Add separator style
-        separator_style = f"color: {config.Colors.TEXT_SECONDARY};"
         
         # Add to layout with separators
         layout.addWidget(self.stock_label)
@@ -77,7 +77,10 @@ class HeaderWidget(QWidget):
     def _create_separator(self) -> QLabel:
         """Create a separator label |"""
         sep = QLabel("|")
-        sep.setStyleSheet(f"color: {config.Colors.TEXT_SECONDARY};")
+        sep.setStyleSheet(f"""
+            color: {config.Colors.TEXT_SECONDARY};
+            font-size: {config.FONT_SIZE}pt;
+        """)
         return sep
     
     def _setup_timer(self):
