@@ -1,0 +1,33 @@
+{
+  "test_info": {
+    "stock_number": "ABC123",
+    "serial_number": "456789",
+    "station_number": "ST-01",
+    "sip_code": "X99"
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "Görsel Kontrol - Ön Panel",
+      "description": "Ön paneldeki tüm göstergelerin çalıştığını doğrulayın.\n\nKontrol edilecekler:\n• LED'lerin yanıp yanmadığını kontrol edin\n• Ekran parlaklığının uygun seviyede olduğunu doğrulayın\n• Fiziksel hasarlar için dış kasayı inceleyin\n\nBeklenen sonuç: Tüm göstergeler normal çalışıyor olmalı.",
+      "time_limit": 180,
+      "image_path": "resources/images/step_001.png",
+      "input_type": "pass_fail",
+      "input_label": "Sonuç",
+      "input_validation": {}
+    },
+    {
+      "step_id": 2,
+      "name": "Voltaj Ölçümü",
+      "description": "Multimetre kullanarak çıkış voltajını ölçün.\n\nAdımlar:\n1. Multimetreyi DC voltaj moduna ayarlayın\n2. Kırmızı probu (+) terminale bağlayın\n3. Siyah probu (-) terminale bağlayın\n4. Okunan değeri kaydedin\n\nBeklenen aralık: 11.5V - 12.5V",
+      "time_limit": 120,
+      "image_path": "resources/images/step_002.png",
+      "input_type": "number",
+      "input_label": "Voltaj (V)",
+      "input_validation": {
+        "min": 11.5,
+        "max": 12.5
+      }
+    }
+  ]
+}
