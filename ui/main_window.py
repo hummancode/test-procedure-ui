@@ -1,17 +1,18 @@
 """
-Main Window (PHASE 1 UPDATED)
-Main application window that orchestrates all widgets and managers
+Main Window
+Main application window with menu bar for continuous data writing
 """
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QMessageBox
+from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QMessageBox, 
+                             QFileDialog, QMenuBar, QMenu, QAction, QStatusBar)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
+import os
 
-from ui.widgets.header_widget import HeaderWidget
-from ui.widgets.title_widget import TitleWidget
-from ui.widgets.content_widget import ContentWidget
-from ui.widgets.status_bar_widget import StatusBarWidget
+from ui.widgets import HeaderWidget, TitleWidget, ContentWidget, StatusBarWidget
+from ui.dialogs import UpdateSettingsDialog
 from managers import TestManager
 from models.enums import InputType, TimerStatus
+from persistence import ContinuousWriter
 import config
 from utils.logger import setup_logger
 
@@ -20,13 +21,15 @@ logger = setup_logger(__name__)
 
 class MainWindow(QMainWindow):
     """
-    Main application window.
+    Main application window with menu bar and continuous data writing.
     
     Layout:
+    - Menu Bar: File menu with continuous update file selection
     - Row 1: Header (test info + timestamp)
     - Row 2: Step title
     - Row 3: Content (image + description + input)
     - Row 4: Status bar (timer + progress + emoji)
+    - Status Bar: Show continuous writer status
     """
     
     def __init__(self):
@@ -37,6 +40,8 @@ class MainWindow(QMainWindow):
         
         # Setup UI
         self._init_ui()
+        self._create_menu_bar()
+        self._create_status_bar()
         self._connect_signals()
         
         logger.info("MainWindow initialized")
@@ -47,32 +52,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(config.WINDOW_TITLE)
         self.setMinimumSize(config.WINDOW_MIN_WIDTH, config.WINDOW_MIN_HEIGHT)
         
-        # Set dark blue background and theme
+        # Set dark blue background
         self.setStyleSheet(f"""
             QMainWindow {{
                 background-color: {config.Colors.BACKGROUND_PRIMARY};
-            }}
-            
-            /* Style QMessageBox for dark theme */
-            QMessageBox {{
-                background-color: {config.Colors.BACKGROUND_SECONDARY};
-                color: {config.Colors.TEXT_PRIMARY};
-            }}
-            QMessageBox QLabel {{
-                color: {config.Colors.TEXT_PRIMARY};
-                font-size: {config.FONT_SIZE}pt;
-            }}
-            QMessageBox QPushButton {{
-                background-color: {config.Colors.BUTTON_PRIMARY};
-                color: {config.Colors.TEXT_PRIMARY};
-                border: none;
-                border-radius: 5px;
-                padding: 8px 16px;
-                font-size: {config.FONT_SIZE}pt;
-                min-width: 80px;
-            }}
-            QMessageBox QPushButton:hover {{
-                background-color: {config.Colors.BUTTON_HOVER};
             }}
         """)
         
@@ -82,7 +65,7 @@ class MainWindow(QMainWindow):
         
         # Main vertical layout
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, config.ROW_4_BOTTOM_MARGIN)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
         # Create all row widgets
@@ -101,6 +84,63 @@ class MainWindow(QMainWindow):
         
         logger.debug("UI layout created")
     
+    def _create_menu_bar(self):
+        """Create menu bar with File menu"""
+        menubar = self.menuBar()
+        menubar.setStyleSheet(f"""
+            QMenuBar {{
+                background-color: {config.Colors.BACKGROUND_SECONDARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                padding: 4px;
+            }}
+            QMenuBar::item:selected {{
+                background-color: {config.Colors.ACCENT_BLUE};
+            }}
+            QMenu {{
+                background-color: {config.Colors.BACKGROUND_SECONDARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                border: 1px solid {config.Colors.BORDER_COLOR};
+            }}
+            QMenu::item:selected {{
+                background-color: {config.Colors.ACCENT_BLUE};
+            }}
+        """)
+        
+        # File menu
+        file_menu = menubar.addMenu(config.Labels.MENU_FILE)
+        
+        # Update settings action
+        self.update_settings_action = QAction(config.Labels.MENU_UPDATE_SETTINGS, self)
+        self.update_settings_action.triggered.connect(self._on_open_update_settings)
+        file_menu.addAction(self.update_settings_action)
+        
+        file_menu.addSeparator()
+        
+        # Exit action
+        exit_action = QAction(config.Labels.MENU_EXIT, self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+        
+        logger.debug("Menu bar created")
+    
+    def _create_status_bar(self):
+        """Create status bar to show continuous writer status"""
+        self.status_bar = QStatusBar()
+        self.status_bar.setStyleSheet(f"""
+            QStatusBar {{
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+                color: {config.Colors.TEXT_SECONDARY};
+                padding: 2px;
+            }}
+        """)
+        self.setStatusBar(self.status_bar)
+        
+        # Show current update folder on startup
+        current_folder = self.test_manager.continuous_writer.get_current_directory()
+        self.status_bar.showMessage(f"Güncelleme klasörü: {current_folder}")
+        
+        logger.debug("Status bar created")
+    
     def _connect_signals(self):
         """Connect signals between components"""
         # Test manager signals
@@ -108,36 +148,64 @@ class MainWindow(QMainWindow):
         self.test_manager.timer_updated.connect(self._on_timer_updated)
         self.test_manager.test_completed.connect(self._on_test_completed)
         self.test_manager.result_submitted.connect(self._on_result_submitted)
+        self.test_manager.data_updated.connect(self._on_data_updated)
         
-        # Content widget signals - UPDATED for flexible workflow
-        # New signature: (result_value, checkbox_value, comment, is_valid)
+        # Content widget signals
         self.content_widget.result_submitted.connect(self._on_user_submit_result)
-        
-        # Emoji update signal - NEW: Update emoji when YAZ button is clicked
-        self.content_widget.emoji_update_requested.connect(self._on_emoji_update_requested)
         
         logger.debug("Signals connected")
     
-    def load_test_procedure(self, filepath: str) -> bool:
+    def _on_open_update_settings(self):
+        """Open update settings dialog"""
+        dialog = UpdateSettingsDialog(
+            self.test_manager.continuous_writer.settings,
+            self
+        )
+        dialog.settings_changed.connect(self._on_settings_changed)
+        dialog.exec_()
+    
+    def _on_settings_changed(self):
+        """Handle settings changed - update the continuous writer"""
+        # Reload folder from settings
+        new_folder = self.test_manager.continuous_writer.settings.get_update_folder()
+        self.test_manager.set_continuous_output_directory(new_folder)
+        
+        # Update interval (will be used on next timer tick)
+        new_interval = self.test_manager.continuous_writer.settings.get_update_interval()
+        
+        # Update status bar
+        self.status_bar.showMessage(
+            f"Güncelleme klasörü: {new_folder} | Her {new_interval}s"
+        )
+        
+        logger.info(f"Settings updated: folder={new_folder}, interval={new_interval}s")
+    
+    def _on_data_updated(self):
+        """Handle data update event"""
+        # Could add visual feedback here (e.g., flash icon in status bar)
+        logger.debug("Session data written to file")
+    
+    def load_test_procedure(self, filepath: str, test_info: dict) -> bool:
         """
         Load test procedure from JSON file.
         
         Args:
             filepath: Path to JSON file
+            test_info: Dict with test metadata (stock_number, etc.)
             
         Returns:
             True if loaded successfully
         """
-        success = self.test_manager.load_test_from_file(filepath)
+        success = self.test_manager.load_test_from_file(filepath, test_info)
         
         if success:
             # Update header with test info
-            self.header_widget.set_test_info(self.test_manager.test_info)
+            self.header_widget.set_test_info(test_info)
             logger.info(f"Test procedure loaded: {filepath}")
         else:
             QMessageBox.critical(
                 self,
-                config.Labels.ERROR_TITLE,
+                "Hata",
                 f"Test dosyası yüklenemedi: {filepath}"
             )
             logger.error(f"Failed to load test procedure: {filepath}")
@@ -146,21 +214,22 @@ class MainWindow(QMainWindow):
     
     def start_test(self):
         """Start the test procedure"""
-        if not self.test_manager.steps:
+        if self.test_manager.session is None or not self.test_manager.session.steps:
             QMessageBox.warning(
                 self,
-                config.Labels.WARNING_TITLE,
+                "Uyarı",
                 "Test prosedürü yüklenmedi!"
             )
             return
         
         success = self.test_manager.start_test()
         if success:
+            self.status_bar.showMessage("Test başladı")
             logger.info("Test started")
         else:
             QMessageBox.critical(
                 self,
-                config.Labels.ERROR_TITLE,
+                "Hata",
                 "Test başlatılamadı!"
             )
     
@@ -195,6 +264,9 @@ class MainWindow(QMainWindow):
         # Reset emoji to happy
         self.status_bar_widget.update_emoji(is_happy=True)
         
+        # Update status bar
+        self.status_bar.showMessage(f"Adım {step_index + 1}/{total_steps}: {current_step.name}")
+        
         logger.info(f"UI updated for step {step_index + 1}/{total_steps}: {current_step.name}")
     
     def _on_timer_updated(self, remaining_seconds: int, timer_status: str):
@@ -207,12 +279,6 @@ class MainWindow(QMainWindow):
         """
         # Update timer display
         self.status_bar_widget.update_timer(remaining_seconds, timer_status)
-        
-        # Only update emoji if no result has been written yet
-        # (YAZ button sets the emoji and shouldn't be overridden by timer)
-        if self.content_widget.has_result_written():
-            # Result already written - don't override emoji
-            return
         
         # Update emoji based on timer
         if remaining_seconds <= 0:
@@ -227,62 +293,40 @@ class MainWindow(QMainWindow):
     
     def _on_user_submit_result(self, result_value, checkbox_value, comment, is_valid):
         """
-        Handle user submitting a result (UPDATED for flexible workflow).
+        Handle user submitting a result.
         
         Args:
-            result_value: Numeric result value (or None)
-            checkbox_value: "PASS" or "FAIL" (or None)
-            comment: Comment text (may be empty string)
-            is_valid: True if valid, False if failed, None if N/A
+            result_value: Value from NUMBER input (or None)
+            checkbox_value: Value from PASS/FAIL checkbox (or None)  
+            comment: Optional comment text
+            is_valid: True/False/None validation result
         """
-        # Determine the actual result to submit
-        # Priority: checkbox_value > result_value
-        final_result = checkbox_value if checkbox_value is not None else result_value
-        
-        # Get current step
+        # Save comment to current step
         current_step = self.test_manager.get_current_step()
-        if not current_step:
-            return
-        
-        # Save comment if provided
-        if comment:
+        if current_step and comment:
             current_step.comment = comment
-            logger.info(f"Comment saved: {comment}")
         
-        # Determine test status based on is_valid
-        if is_valid is None:
-            # No input required - intermediate step
-            test_status = "not_applicable"
-        elif is_valid is True:
-            # Valid input - passed
-            test_status = "passed"
+        # Determine which value to use based on input type
+        if current_step and current_step.input_type == InputType.PASS_FAIL:
+            # For checkboxes, use checkbox_value ("PASS" or "FAIL")
+            final_value = checkbox_value
+        elif current_step and current_step.input_type == InputType.NUMBER:
+            # For numbers, use result_value
+            final_value = result_value
         else:
-            # Invalid input or FAIL checkbox - failed
-            test_status = "failed"
+            # For NONE type
+            final_value = None
         
-        # Submit result to test manager with status
-        success = self.test_manager.submit_result(final_result, test_status)
+        # Submit to TestManager
+        success = self.test_manager.submit_result(final_value)
         
-        if success:
-            logger.info(f"Step completed with status: {test_status}")
-        else:
+        if not success:
             QMessageBox.warning(
                 self,
-                config.Labels.WARNING_TITLE,
+                "Uyarı",
                 config.Labels.INVALID_INPUT
             )
-            logger.warning("Failed to submit result")
-    
-    def _on_emoji_update_requested(self, is_happy: bool):
-        """
-        Handle emoji update request from content widget.
-        Called when YAZ button writes a result.
-        
-        Args:
-            is_happy: True for happy, False for sad
-        """
-        self.status_bar_widget.update_emoji(is_happy)
-        logger.debug(f"Emoji updated: {'happy' if is_happy else 'sad'}")
+            logger.warning("Invalid input rejected")
     
     def _on_result_submitted(self, step_index: int, result_value, status: str):
         """
@@ -303,9 +347,11 @@ class MainWindow(QMainWindow):
     
     def _on_test_completed(self):
         """Handle test completion"""
+        self.status_bar.showMessage("Test tamamlandı!")
+        
         QMessageBox.information(
             self,
-            config.Labels.SUCCESS_TITLE,
+            "Tamamlandı",
             config.Labels.TEST_COMPLETE
         )
         logger.info("Test procedure completed")

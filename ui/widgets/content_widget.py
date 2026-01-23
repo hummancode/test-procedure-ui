@@ -1,6 +1,8 @@
 """
-Content Widget - Row 3 (PHASE 1 UPDATED)
+Content Widget - Row 3 (PHASE 1 UPDATED - İLERLE BUTTON FIX)
 Main content area: Image + Description + Input + Buttons
+
+FIX: İlerle button now ALWAYS visible, even for InputType.NONE steps
 """
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel, 
                              QTextEdit, QLineEdit, QPushButton, QCheckBox,
@@ -21,11 +23,12 @@ class ContentWidget(QWidget):
     Row 3: Main Content Area
     
     Left side (40%): Test step image
-    Right side (60%): Description + Input + Buttons
+    Right side (60%): Description + Input (conditional) + Buttons (ALWAYS visible)
     
     Signals:
         result_submitted: Emitted when user clicks İlerle and validation passes
-                         (result_value, checkbox_value, comment)
+                         (result_value, checkbox_value, comment, is_valid)
+        emoji_update_requested: Emitted to update emoji immediately (is_happy)
     """
     
     result_submitted = pyqtSignal(object, object, str, object)  # result, checkbox, comment, is_valid
@@ -35,7 +38,7 @@ class ContentWidget(QWidget):
         super().__init__(parent)
         self.current_input_type = InputType.NONE
         self.current_validation = {}
-        self.result_written = False  # NEW: Track if YAZ button has been clicked
+        self.result_written = False  # Track if YAZ button has been clicked
         self._init_ui()
         
     def _init_ui(self):
@@ -92,7 +95,7 @@ class ContentWidget(QWidget):
         return container
     
     def _create_content_container(self) -> QWidget:
-        """Create the description + input area"""
+        """Create the description + input + button area"""
         container = QWidget()
         
         layout = QVBoxLayout()
@@ -119,17 +122,23 @@ class ContentWidget(QWidget):
             }}
         """)
         
-        layout.addWidget(self.description_area, 60)  # 60% of space
+        layout.addWidget(self.description_area, 50)  # 50% of space
         
-        # Input section (conditional)
+        # Input section (conditional, will be hidden for NONE type)
         self.input_container = self._create_input_container()
-        layout.addWidget(self.input_container, 40)  # 40% of space
+        layout.addWidget(self.input_container, 35)  # 35% of space
+        
+        # ════════════════════════════════════════════════════════
+        # FIX: Button section separate from input (ALWAYS VISIBLE)
+        # ════════════════════════════════════════════════════════
+        self.button_section = self._create_button_section()
+        layout.addWidget(self.button_section, 15)  # 15% of space
         
         container.setLayout(layout)
         return container
     
     def _create_input_container(self) -> QWidget:
-        """Create the input section (hidden by default)"""
+        """Create the input section (hidden by default, shown only for NUMBER/PASS_FAIL)"""
         container = QWidget()
         
         layout = QVBoxLayout()
@@ -152,30 +161,26 @@ class ContentWidget(QWidget):
         self.error_label.setWordWrap(True)
         self.error_label.hide()
         
-        # Comment section (always present, hidden by default)
-        self.comment_container = self._create_comment_container()
-        
-        # Button container
-        button_container = self._create_button_container()
-        
         # Add to layout
         layout.addWidget(self.input_widget_container)
         layout.addWidget(self.error_label)
-        layout.addWidget(self.comment_container)
-        layout.addWidget(button_container)
         
         container.setLayout(layout)
         container.hide()  # Hidden by default
         
         return container
     
-    def _create_comment_container(self) -> QWidget:
-        """Create comment text area (hidden by default)"""
+    def _create_button_section(self) -> QWidget:
+        """
+        Create button section (ALWAYS VISIBLE, separate from input_container).
+        Contains: YORUM EKLE button, Comment field (toggled), İlerle button
+        """
         container = QWidget()
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(5)
+        layout.setSpacing(10)
         
+        # Comment text area (hidden by default, toggled by YORUM EKLE)
         self.comment_text = QTextEdit()
         self.comment_text.setPlaceholderText(config.Labels.COMMENT_PLACEHOLDER)
         self.comment_text.setMaximumHeight(config.COMMENT_FIELD_HEIGHT)
@@ -191,17 +196,11 @@ class ContentWidget(QWidget):
         """)
         self.comment_text.hide()
         
-        layout.addWidget(self.comment_text)
-        container.setLayout(layout)
-        
-        return container
-    
-    def _create_button_container(self) -> QWidget:
-        """Create button container with YORUM EKLE and İlerle buttons"""
-        container = QWidget()
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
+        # Button container (YORUM EKLE + İlerle)
+        button_container = QWidget()
+        button_layout = QHBoxLayout()
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setSpacing(10)
         
         # YORUM EKLE button (left)
         self.comment_button = QPushButton(config.Labels.ADD_COMMENT)
@@ -224,10 +223,10 @@ class ContentWidget(QWidget):
         self.comment_button.clicked.connect(self._toggle_comment)
         
         # Spacer
-        layout.addWidget(self.comment_button)
-        layout.addStretch()
+        button_layout.addWidget(self.comment_button)
+        button_layout.addStretch()
         
-        # İlerle button (right)
+        # İlerle button (right) - ALWAYS VISIBLE
         self.proceed_button = QPushButton(config.Labels.PROCEED)
         self.proceed_button.setStyleSheet(f"""
             QPushButton {{
@@ -250,7 +249,12 @@ class ContentWidget(QWidget):
         """)
         self.proceed_button.clicked.connect(self._on_proceed_clicked)
         
-        layout.addWidget(self.proceed_button)
+        button_layout.addWidget(self.proceed_button)
+        button_container.setLayout(button_layout)
+        
+        # Add to main layout
+        layout.addWidget(self.comment_text)
+        layout.addWidget(button_container)
         
         container.setLayout(layout)
         return container
@@ -294,7 +298,10 @@ class ContentWidget(QWidget):
             self._setup_input_widget(input_type, self.current_validation)
             self.input_container.show()
         else:
-            self.input_container.hide()
+            self.input_container.hide()  # Hide input widgets for NONE type
+        
+        # Button section is ALWAYS visible (now separate from input_container)
+        self.button_section.show()
         
         # Reset comment
         self.comment_text.clear()
@@ -610,6 +617,20 @@ class ContentWidget(QWidget):
     
     def _on_proceed_clicked(self):
         """Handle İlerle button click with validation"""
+        # ════════════════════════════════════════════════════════
+        # FIX: Handle InputType.NONE - proceed without validation
+        # ════════════════════════════════════════════════════════
+        if self.current_input_type == InputType.NONE:
+            # No input required - proceed directly
+            result_value = None
+            checkbox_value = None
+            comment = self.comment_text.toPlainText().strip()
+            is_value_valid = None  # None means N/A
+            
+            self.result_submitted.emit(result_value, checkbox_value, comment, is_value_valid)
+            logger.info("Intermediate step (NONE) - proceeding without input validation")
+            return
+        
         # Validate based on input type (only checks if required fields are filled)
         is_valid, error_msg = self._validate_before_proceed()
         
@@ -625,7 +646,7 @@ class ContentWidget(QWidget):
         # Get values and determine if they pass validation criteria
         result_value = None
         checkbox_value = None
-        is_value_valid = True  # NEW: Track if value meets criteria
+        is_value_valid = True  # Track if value meets criteria
         
         if self.current_input_type == InputType.NUMBER:
             result_value = self.result_display.text()
@@ -648,15 +669,10 @@ class ContentWidget(QWidget):
                 checkbox_value = "FAIL"
                 is_value_valid = False
         
-        elif self.current_input_type == InputType.NONE:
-            # No input required - mark as not applicable
-            is_value_valid = None  # None means N/A
-        
         # Get comment
         comment = self.comment_text.toPlainText().strip()
         
         # Emit signal with validation status
-        # NEW signature: (result_value, checkbox_value, comment, is_valid)
         self.result_submitted.emit(result_value, checkbox_value, comment, is_value_valid)
         logger.info(f"Result submitted - Value: {result_value}, Checkbox: {checkbox_value}, "
                    f"Comment: {comment}, Valid: {is_value_valid}")

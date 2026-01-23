@@ -1,9 +1,11 @@
 """
-TestStep Data Model (PHASE 1 UPDATED)
-Represents a single step in the test procedure with comment support
+TestStep Data Model
+Represents a single step in the test procedure
 """
 from typing import Optional, Dict, Any
+from datetime import datetime
 from models.enums import TestStatus, InputType
+import config
 
 
 class TestStep:
@@ -22,7 +24,8 @@ class TestStep:
         status: Current status of the step (TestStatus enum)
         result_value: User-entered result value
         actual_duration: Actual time taken to complete (seconds)
-        comment: Optional user comment about the step (PHASE 1 addition)
+        start_time: Unix timestamp when step started
+        comment: Optional comment from user
     """
     
     def __init__(
@@ -49,8 +52,8 @@ class TestStep:
         self.status = TestStatus.NOT_STARTED
         self.result_value: Optional[Any] = None
         self.actual_duration: Optional[int] = None
-        self.start_time: Optional[float] = None
-        self.comment: str = ""  # PHASE 1: Added comment field
+        self.start_time: Optional[float] = None  # Unix timestamp
+        self.comment: Optional[str] = None
         
     @property
     def requires_input(self) -> bool:
@@ -71,8 +74,28 @@ class TestStep:
             'status': self.status.value,
             'result_value': self.result_value,
             'actual_duration': self.actual_duration,
-            'comment': self.comment  # PHASE 1: Include comment in serialization
+            'start_time': self._format_timestamp(self.start_time),
+            'comment': self.comment
         }
+    
+    def _format_timestamp(self, timestamp: Optional[float]) -> Optional[str]:
+        """
+        Format Unix timestamp to readable string.
+        
+        Args:
+            timestamp: Unix timestamp (seconds since epoch)
+            
+        Returns:
+            Formatted datetime string or None
+        """
+        if timestamp is None:
+            return None
+        
+        try:
+            dt = datetime.fromtimestamp(timestamp)
+            return dt.strftime(config.DATETIME_FORMAT)
+        except:
+            return None
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'TestStep':
@@ -95,7 +118,7 @@ class TestStep:
             step.result_value = data['result_value']
         if 'actual_duration' in data:
             step.actual_duration = data['actual_duration']
-        if 'comment' in data:  # PHASE 1: Restore comment if present
+        if 'comment' in data:
             step.comment = data['comment']
             
         return step

@@ -18,6 +18,16 @@
     },
     {
       "step_id": 2,
+      "name": "Ara Adım - Bilgilendirme",
+      "description": "Ara adım - devam etmek için İlerle butonuna basın.",
+      "time_limit": 10,
+      "image_path": "resources/images/step_001.png",
+      "input_type": "none",
+      "input_label": "",
+      "input_validation": {}
+    },
+    {
+      "step_id": 3,
       "name": "Voltaj Ölçümü",
       "description": "Multimetre kullanarak çıkış voltajını ölçün.\n\nAdımlar:\n1. Multimetreyi DC voltaj moduna ayarlayın\n2. Kırmızı probu (+) terminale bağlayın\n3. Siyah probu (-) terminale bağlayın\n4. Okunan değeri kaydedin\n\nBeklenen aralık: 11.5V - 12.5V",
       "time_limit": 120,

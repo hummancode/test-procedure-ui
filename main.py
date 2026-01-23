@@ -10,6 +10,7 @@ from utils.logger import setup_logger
 import config
 import qdarkstyle
 
+
 # Setup logger
 logger = setup_logger('main')
 
@@ -23,17 +24,21 @@ def main():
     # Create application
     app = QApplication(sys.argv)
     app.setApplicationName(config.WINDOW_TITLE)
-    
-    # Apply modern Material Design theme
-    # Options: 'dark_blue.xml', 'dark_cyan.xml', 'dark_teal.xml', etc.
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
-    
     # Create main window
     window = MainWindow()
     
+    # Test info - in real application, this would come from user input or database
+    test_info = {
+        'stock_number': 'ABC123',
+        'serial_number': '456789',
+        'station_number': 'ST-01',
+        'sip_code': 'X99'
+    }
+    
     # Load test procedure
     test_file = 'data/sample_test.json'
-    if window.load_test_procedure(test_file):
+    if window.load_test_procedure(test_file, test_info):
         logger.info(f"Loaded test procedure: {test_file}")
         
         # Start the test
@@ -43,6 +48,7 @@ def main():
         window.show()
         
         logger.info("Application window displayed")
+        logger.info("Use 'Dosya > Güncelleme Dosyası Seç...' to enable continuous data writing")
     else:
         logger.error("Failed to load test procedure. Exiting.")
         sys.exit(1)

@@ -1,6 +1,6 @@
 """
 Configuration and Constants for Test Procedure UI
-Phase 1 - Updated with larger fonts and new UI elements
+Phase 2 - Updated with larger fonts, new UI elements, and continuous writing
 """
 
 # ============================================================================
@@ -69,6 +69,11 @@ class Labels:
     STEP = "Adım"
     RESERVED = "Rezerve Alan"
     
+    # Menu Items
+    MENU_FILE = "Dosya"
+    MENU_UPDATE_SETTINGS = "Güncelleme Ayarları..."
+    MENU_EXIT = "Çıkış"
+    
     # Messages
     VALIDATION_REQUIRED = "Lütfen gerekli değerleri girin!"
     NO_VALUE_WRITTEN = "Lütfen değer girin ve YAZ butonuna basın!"
@@ -79,6 +84,9 @@ class Labels:
     ENTER_VALUE_FIRST = "Lütfen bir değer girin!"
     INVALID_INPUT = "Geçersiz giriş. Lütfen kontrol edin."
     TEST_COMPLETE = "Test tamamlandı!"
+    UPDATE_FILE_SELECTED = "Güncelleme klasörü seçildi"
+    UPDATE_FILE_ERROR = "Güncelleme klasörü ayarlanamadı"
+    UPDATE_DISABLED = "Sürekli güncelleme durduruldu"
     
     # Dialog Titles
     ERROR_TITLE = "Hata"
@@ -207,6 +215,7 @@ TIME_FORMAT = "%H:%M:%S"
 DATA_DIR = "data"
 RESOURCES_DIR = "resources"
 IMAGES_DIR = "resources/images"
+UPDATE_FILES_DIR = "data/updates"  # Directory for continuous update files
 
 
 # ============================================================================
