@@ -10,7 +10,7 @@
       "step_id": 1,
       "name": "Görsel Kontrol - Ön Panel",
       "description": "Ön paneldeki tüm göstergelerin çalıştığını doğrulayın.\n\nKontrol edilecekler:\n• LED'lerin yanıp yanmadığını kontrol edin\n• Ekran parlaklığının uygun seviyede olduğunu doğrulayın\n• Fiziksel hasarlar için dış kasayı inceleyin\n\nBeklenen sonuç: Tüm göstergeler normal çalışıyor olmalı.",
-      "time_limit": 180,
+      "time_limit": 5,
       "image_path": "resources/images/step_001.png",
       "input_type": "pass_fail",
       "input_label": "Sonuç",

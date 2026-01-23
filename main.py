@@ -1,12 +1,14 @@
 """
 Test Procedure UI - Main Entry Point
-Phase 1: Simple 2-step demo
+Phase 1: Simple 2-step demo with Modern UI
 """
 import sys
 from PyQt5.QtWidgets import QApplication
+from qt_material import apply_stylesheet
 from ui.main_window import MainWindow
 from utils.logger import setup_logger
 import config
+import qdarkstyle
 
 # Setup logger
 logger = setup_logger('main')
@@ -22,9 +24,13 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName(config.WINDOW_TITLE)
     
+    # Apply modern Material Design theme
+    # Options: 'dark_blue.xml', 'dark_cyan.xml', 'dark_teal.xml', etc.
+    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
+    
     # Create main window
     window = MainWindow()
-
+    
     # Load test procedure
     test_file = 'data/sample_test.json'
     if window.load_test_procedure(test_file):

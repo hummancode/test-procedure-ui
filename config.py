@@ -67,7 +67,7 @@ class Labels:
     
     # Status Bar
     STEP = "Adım"
-    RESERVED = "Ayrılmış"
+    RESERVED = "Rezerve Alan"
     
     # Messages
     VALIDATION_REQUIRED = "Lütfen gerekli değerleri girin!"
