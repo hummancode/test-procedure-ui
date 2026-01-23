@@ -92,8 +92,11 @@ class Labels:
     ERROR_TITLE = "Hata"
     WARNING_TITLE = "Uyarı"
     SUCCESS_TITLE = "Başarılı"
-
-
+    
+    
+    MENU_VIEW = "Görünüm"
+    TOGGLE_SIDEBAR = "İlerleme Paneli"
+    PROGRESS_NAVIGATOR = "İlerleme Paneli"
 # ============================================================================
 # WINDOW SETTINGS
 # ============================================================================
@@ -190,7 +193,9 @@ EMOJI_BACKGROUND_SIZE = 80  # Circular background size
 # Checkboxes
 CHECKBOX_SPACING = 30  # Space between checkboxes
 
-
+# Sidebar Settings (NEW)
+SIDEBAR_WIDTH = 250  # pixels
+SIDEBAR_ANIMATION_DURATION = 200  # milliseconds
 # ============================================================================
 # IMAGE SETTINGS
 # ============================================================================

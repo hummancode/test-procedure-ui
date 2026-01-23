@@ -1,14 +1,14 @@
 """
 Main Window
-Main application window with menu bar for continuous data writing
+Main application window with menu bar and sidebar for continuous data writing
 """
-from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QMessageBox, 
+from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, 
                              QFileDialog, QMenuBar, QMenu, QAction, QStatusBar)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import os
 
-from ui.widgets import HeaderWidget, TitleWidget, ContentWidget, StatusBarWidget
+from ui.widgets import HeaderWidget, TitleWidget, ContentWidget, StatusBarWidget, ProgressNavigator
 from ui.dialogs import UpdateSettingsDialog
 from managers import TestManager
 from models.enums import InputType, TimerStatus
@@ -21,14 +21,15 @@ logger = setup_logger(__name__)
 
 class MainWindow(QMainWindow):
     """
-    Main application window with menu bar and continuous data writing.
+    Main application window with menu bar, sidebar, and continuous data writing.
     
     Layout:
-    - Menu Bar: File menu with continuous update file selection
+    - Menu Bar: File and View menus
     - Row 1: Header (test info + timestamp)
     - Row 2: Step title
     - Row 3: Content (image + description + input)
     - Row 4: Status bar (timer + progress + emoji)
+    - Sidebar: Progress navigator (toggleable)
     - Status Bar: Show continuous writer status
     """
     
@@ -37,6 +38,9 @@ class MainWindow(QMainWindow):
         
         # Initialize test manager
         self.test_manager = TestManager()
+        
+        # Sidebar state
+        self.sidebar_visible = False
         
         # Setup UI
         self._init_ui()
@@ -63,7 +67,13 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
-        # Main vertical layout
+        # Horizontal layout for main content + sidebar
+        horizontal_layout = QHBoxLayout()
+        horizontal_layout.setContentsMargins(0, 0, 0, 0)
+        horizontal_layout.setSpacing(0)
+        
+        # Main content area (left side)
+        main_content = QWidget()
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
@@ -74,18 +84,28 @@ class MainWindow(QMainWindow):
         self.content_widget = ContentWidget()
         self.status_bar_widget = StatusBarWidget()
         
-        # Add widgets to layout
+        # Add widgets to main layout
         main_layout.addWidget(self.header_widget)
         main_layout.addWidget(self.title_widget)
         main_layout.addWidget(self.content_widget, 1)  # Stretch factor 1 (fills space)
         main_layout.addWidget(self.status_bar_widget)
         
-        central_widget.setLayout(main_layout)
+        main_content.setLayout(main_layout)
         
-        logger.debug("UI layout created")
+        # Add main content to horizontal layout
+        horizontal_layout.addWidget(main_content, 1)
+        
+        # Create sidebar (hidden initially)
+        self.sidebar = ProgressNavigator()
+        self.sidebar.hide()
+        horizontal_layout.addWidget(self.sidebar)
+        
+        central_widget.setLayout(horizontal_layout)
+        
+        logger.debug("UI layout created with sidebar support")
     
     def _create_menu_bar(self):
-        """Create menu bar with File menu"""
+        """Create menu bar with File and View menus"""
         menubar = self.menuBar()
         menubar.setStyleSheet(f"""
             QMenuBar {{
@@ -121,7 +141,18 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
-        logger.debug("Menu bar created")
+        # View menu (NEW)
+        view_menu = menubar.addMenu(config.Labels.MENU_VIEW)
+        
+        # Toggle sidebar action
+        self.toggle_sidebar_action = QAction(config.Labels.TOGGLE_SIDEBAR, self)
+        self.toggle_sidebar_action.setCheckable(True)
+        self.toggle_sidebar_action.setChecked(False)
+        self.toggle_sidebar_action.setShortcut("F2")
+        self.toggle_sidebar_action.triggered.connect(self.toggle_sidebar)
+        view_menu.addAction(self.toggle_sidebar_action)
+        
+        logger.debug("Menu bar created with View menu")
     
     def _create_status_bar(self):
         """Create status bar to show continuous writer status"""
@@ -141,6 +172,20 @@ class MainWindow(QMainWindow):
         
         logger.debug("Status bar created")
     
+    def toggle_sidebar(self):
+        """Toggle sidebar visibility"""
+        self.sidebar_visible = not self.sidebar_visible
+        
+        if self.sidebar_visible:
+            self.sidebar.show()
+            logger.info("Sidebar shown")
+        else:
+            self.sidebar.hide()
+            logger.info("Sidebar hidden")
+        
+        # Update menu action state
+        self.toggle_sidebar_action.setChecked(self.sidebar_visible)
+    
     def _connect_signals(self):
         """Connect signals between components"""
         # Test manager signals
@@ -148,7 +193,6 @@ class MainWindow(QMainWindow):
         self.test_manager.timer_updated.connect(self._on_timer_updated)
         self.test_manager.test_completed.connect(self._on_test_completed)
         self.test_manager.result_submitted.connect(self._on_result_submitted)
-        #self.test_manager.data_updated.connect(self._on_data_updated)
         
         # Content widget signals
         self.content_widget.result_submitted.connect(self._on_user_submit_result)
@@ -180,11 +224,6 @@ class MainWindow(QMainWindow):
         
         logger.info(f"Settings updated: folder={new_folder}, interval={new_interval}s")
     
-    def _on_data_updated(self):
-        """Handle data update event"""
-        # Could add visual feedback here (e.g., flash icon in status bar)
-        logger.debug("Session data written to file")
-    
     def load_test_procedure(self, filepath: str, test_info: dict) -> bool:
         """
         Load test procedure from JSON file.
@@ -201,6 +240,11 @@ class MainWindow(QMainWindow):
         if success:
             # Update header with test info
             self.header_widget.set_test_info(test_info)
+            
+            # Initialize sidebar with steps
+            if self.sidebar:
+                self.sidebar.set_steps(self.test_manager.steps)
+            
             logger.info(f"Test procedure loaded: {filepath}")
         else:
             QMessageBox.critical(
@@ -240,7 +284,7 @@ class MainWindow(QMainWindow):
         Args:
             step_index: Current step index (0-based)
             total_steps: Total number of steps
-            mode: Navigation mode (normal, view_only, edit) - NEW parameter
+            mode: Navigation mode (normal, view_only, edit)
         """
         current_step = self.test_manager.get_current_step()
         if current_step is None:
@@ -265,7 +309,12 @@ class MainWindow(QMainWindow):
         # Reset emoji to happy
         self.status_bar_widget.update_emoji(is_happy=True)
         
+        # Update sidebar
+        if self.sidebar:
+            self.sidebar.update_current_step(step_index)
+        
         logger.info(f"UI updated for step {step_index + 1}/{total_steps}: {current_step.name} (mode: {mode})")    
+    
     def _on_timer_updated(self, remaining_seconds: int, timer_status: str):
         """
         Handle timer update event.
@@ -335,6 +384,10 @@ class MainWindow(QMainWindow):
             self.status_bar_widget.update_emoji(is_happy=True)
         else:
             self.status_bar_widget.update_emoji(is_happy=False)
+        
+        # Update sidebar step status
+        if self.sidebar:
+            self.sidebar.update_step_status(step_index)
     
     def _on_test_completed(self):
         """Handle test completion"""
