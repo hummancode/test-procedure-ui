@@ -240,3 +240,4 @@ EMOJI_NEUTRAL = "😐"
 # ============================================================================
 
 ANIMATION_DURATION = 200  # milliseconds for smooth transitions
+DEFAULT_UPDATE_INTERVAL = 10  # seconds

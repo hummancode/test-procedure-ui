@@ -148,7 +148,7 @@ class MainWindow(QMainWindow):
         self.test_manager.timer_updated.connect(self._on_timer_updated)
         self.test_manager.test_completed.connect(self._on_test_completed)
         self.test_manager.result_submitted.connect(self._on_result_submitted)
-        self.test_manager.data_updated.connect(self._on_data_updated)
+        #self.test_manager.data_updated.connect(self._on_data_updated)
         
         # Content widget signals
         self.content_widget.result_submitted.connect(self._on_user_submit_result)
@@ -233,13 +233,14 @@ class MainWindow(QMainWindow):
                 "Test başlatılamadı!"
             )
     
-    def _on_step_changed(self, step_index: int, total_steps: int):
+    def _on_step_changed(self, step_index: int, total_steps: int, mode: str = 'normal'):
         """
         Handle step change event.
         
         Args:
             step_index: Current step index (0-based)
             total_steps: Total number of steps
+            mode: Navigation mode (normal, view_only, edit) - NEW parameter
         """
         current_step = self.test_manager.get_current_step()
         if current_step is None:
@@ -264,11 +265,7 @@ class MainWindow(QMainWindow):
         # Reset emoji to happy
         self.status_bar_widget.update_emoji(is_happy=True)
         
-        # Update status bar
-        self.status_bar.showMessage(f"Adım {step_index + 1}/{total_steps}: {current_step.name}")
-        
-        logger.info(f"UI updated for step {step_index + 1}/{total_steps}: {current_step.name}")
-    
+        logger.info(f"UI updated for step {step_index + 1}/{total_steps}: {current_step.name} (mode: {mode})")    
     def _on_timer_updated(self, remaining_seconds: int, timer_status: str):
         """
         Handle timer update event.
@@ -293,41 +290,35 @@ class MainWindow(QMainWindow):
     
     def _on_user_submit_result(self, result_value, checkbox_value, comment, is_valid):
         """
-        Handle user submitting a result.
+        Handle user submitting a result from ContentWidget.
         
         Args:
-            result_value: Value from NUMBER input (or None)
-            checkbox_value: Value from PASS/FAIL checkbox (or None)  
-            comment: Optional comment text
-            is_valid: True/False/None validation result
+            result_value: Numeric result or None
+            checkbox_value: "PASS"/"FAIL"/"GEÇTİ"/"KALDI" or None  
+            comment: Comment text
+            is_valid: Whether value is valid (True/False/None)
         """
         # Save comment to current step
         current_step = self.test_manager.get_current_step()
         if current_step and comment:
             current_step.comment = comment
         
-        # Determine which value to use based on input type
-        if current_step and current_step.input_type == InputType.PASS_FAIL:
-            # For checkboxes, use checkbox_value ("PASS" or "FAIL")
+        # Determine final value to submit based on input type
+        if current_step.input_type == InputType.PASS_FAIL:
+            # Use checkbox value for PASS/FAIL steps
             final_value = checkbox_value
-        elif current_step and current_step.input_type == InputType.NUMBER:
-            # For numbers, use result_value
+        elif current_step.input_type == InputType.NUMBER:
+            # Use numeric value for NUMBER steps
             final_value = result_value
         else:
-            # For NONE type
+            # No input required
             final_value = None
         
-        # Submit to TestManager
-        success = self.test_manager.submit_result(final_value)
+        # Submit to TestManager with ALL 4 parameters
+        self.test_manager.submit_result(result_value, checkbox_value, comment, is_valid)
         
-        if not success:
-            QMessageBox.warning(
-                self,
-                "Uyarı",
-                config.Labels.INVALID_INPUT
-            )
-            logger.warning("Invalid input rejected")
-    
+        logger.info(f"Result submitted: value={result_value}, checkbox={checkbox_value}, valid={is_valid}")
+        
     def _on_result_submitted(self, step_index: int, result_value, status: str):
         """
         Handle result submission confirmation from manager.
