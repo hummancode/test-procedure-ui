@@ -1,12 +1,12 @@
 {
-  "session_id": "20260123_191343",
+  "session_id": "20260124_141301",
   "stock_number": "ABC123",
   "serial_number": "456789",
   "station_number": "ST-01",
   "sip_code": "X99",
-  "start_time": "2026-01-23T19:13:43.954392",
-  "end_time": "2026-01-23T19:14:01.963114",
-  "duration_seconds": 18,
+  "start_time": "2026-01-24T14:13:01.126158",
+  "end_time": "2026-01-24T14:13:29.912736",
+  "duration_seconds": 28,
   "completion_percentage": 100.0,
   "passed_count": 1,
   "failed_count": 2,
@@ -15,8 +15,8 @@
       "step_id": 1,
       "name": "Görsel Kontrol - Ön Panel",
       "status": "failed",
-      "start_time": "23/01/2026 19:13:43",
-      "actual_duration": 7,
+      "start_time": "24/01/2026 14:13:01",
+      "actual_duration": 18,
       "result_value": "FAIL",
       "comment": "",
       "time_limit": 5,
@@ -26,10 +26,10 @@
       "step_id": 2,
       "name": "Ara Adım - Bilgilendirme",
       "status": "passed",
-      "start_time": "23/01/2026 19:13:51",
-      "actual_duration": 6,
+      "start_time": "24/01/2026 14:13:19",
+      "actual_duration": 4,
       "result_value": null,
-      "comment": "AS",
+      "comment": "ğlliliş",
       "time_limit": 10,
       "input_validation": {}
     },
@@ -37,9 +37,9 @@
       "step_id": 3,
       "name": "Voltaj Ölçümü",
       "status": "failed",
-      "start_time": "23/01/2026 19:13:57",
-      "actual_duration": 4,
-      "result_value": "2",
+      "start_time": "24/01/2026 14:13:23",
+      "actual_duration": 5,
+      "result_value": "5",
       "comment": "",
       "time_limit": 120,
       "input_validation": {
@@ -48,6 +48,6 @@
       }
     }
   ],
-  "last_updated": "2026-01-23T19:14:01.963248",
+  "last_updated": "2026-01-24T14:13:29.912767",
   "file_version": "1.0"
 }

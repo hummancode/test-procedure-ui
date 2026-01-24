@@ -97,6 +97,15 @@ class Labels:
     MENU_VIEW = "Görünüm"
     TOGGLE_SIDEBAR = "İlerleme Paneli"
     PROGRESS_NAVIGATOR = "İlerleme Paneli"
+    # Export Button
+    REPORT = "Raporla"
+    
+    # Export Messages (NEW)
+    SELECT_EXPORT_FOLDER = "Excel Raporu Kaydetme Konumunu Seçin"
+    EXPORT_SUCCESS_TITLE = "Rapor Kaydedildi"
+    EXPORT_SUCCESS_MESSAGE = "Excel raporu başarıyla kaydedildi:"
+    EXPORT_ERROR_TITLE = "Hata"
+    EXPORT_ERROR_MESSAGE = "Excel raporu kaydedilemedi. Lütfen tekrar deneyin."
 # ============================================================================
 # WINDOW SETTINGS
 # ============================================================================
@@ -221,7 +230,7 @@ DATA_DIR = "data"
 RESOURCES_DIR = "resources"
 IMAGES_DIR = "resources/images"
 UPDATE_FILES_DIR = "data/updates"  # Directory for continuous update files
-
+EXPORT_DIR = "data/exports"  # NEW: Default export directory
 
 # ============================================================================
 # LOGGING

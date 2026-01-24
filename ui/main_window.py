@@ -1,9 +1,9 @@
 """
 Main Window
-Main application window with menu bar and sidebar for continuous data writing
+Main application window with menu bar, sidebar, continuous data writing, and Excel export
 """
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, 
-                             QFileDialog, QMenuBar, QMenu, QAction, QStatusBar)
+                             QFileDialog, QMenuBar, QMenu, QAction, QStatusBar, QPushButton)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import os
@@ -21,13 +21,13 @@ logger = setup_logger(__name__)
 
 class MainWindow(QMainWindow):
     """
-    Main application window with menu bar, sidebar, and continuous data writing.
+    Main application window with menu bar, sidebar, continuous data writing, and Excel export.
     
     Layout:
     - Menu Bar: File and View menus
     - Row 1: Header (test info + timestamp)
     - Row 2: Step title
-    - Row 3: Content (image + description + input)
+    - Row 3: Content (image + description + input + export button)
     - Row 4: Status bar (timer + progress + emoji)
     - Sidebar: Progress navigator (toggleable)
     - Status Bar: Show continuous writer status
@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
         self._create_status_bar()
         self._connect_signals()
         
-        logger.info("MainWindow initialized")
+        logger.info("MainWindow initialized with Excel export support")
     
     def _init_ui(self):
         """Initialize the user interface"""
@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
-        # View menu (NEW)
+        # View menu
         view_menu = menubar.addMenu(config.Labels.MENU_VIEW)
         
         # Toggle sidebar action
@@ -196,6 +196,9 @@ class MainWindow(QMainWindow):
         
         # Content widget signals
         self.content_widget.result_submitted.connect(self._on_user_submit_result)
+        self.content_widget.emoji_update_requested.connect(
+            lambda is_happy: self.status_bar_widget.update_emoji(is_happy)
+        )
         
         logger.debug("Signals connected")
     
@@ -245,6 +248,11 @@ class MainWindow(QMainWindow):
             if self.sidebar:
                 self.sidebar.set_steps(self.test_manager.steps)
             
+            # >>> NEW: Update export button with session <<<
+            if hasattr(self.test_manager, 'session') and self.test_manager.session:
+                self.content_widget.set_session(self.test_manager.session)
+                logger.debug("Export button enabled with loaded session")
+            
             logger.info(f"Test procedure loaded: {filepath}")
         else:
             QMessageBox.critical(
@@ -268,6 +276,11 @@ class MainWindow(QMainWindow):
         
         success = self.test_manager.start_test()
         if success:
+            # >>> NEW: Update export button with started session <<<
+            if hasattr(self.test_manager, 'session') and self.test_manager.session:
+                self.content_widget.set_session(self.test_manager.session)
+                logger.debug("Export button updated after test start")
+            
             self.status_bar.showMessage("Test başladı")
             logger.info("Test started")
         else:
@@ -303,6 +316,10 @@ class MainWindow(QMainWindow):
             input_validation=current_step.input_validation
         )
         
+        # >>> NEW: Update export button with latest session state <<<
+        if hasattr(self.test_manager, 'session') and self.test_manager.session:
+            self.content_widget.set_session(self.test_manager.session)
+        
         # Update progress (1-based for display)
         self.status_bar_widget.update_progress(step_index + 1, total_steps)
         
@@ -326,13 +343,17 @@ class MainWindow(QMainWindow):
         # Update timer display
         self.status_bar_widget.update_timer(remaining_seconds, timer_status)
         
+        # Only update emoji from timer if result hasn't been written yet
+        if self.content_widget.has_result_written():
+            return  # Don't override emoji after result written
+        
         # Update emoji based on timer
         if remaining_seconds <= 0:
             self.status_bar_widget.update_emoji(is_happy=False)
         else:
             # Check if there's a failed result
             current_step = self.test_manager.get_current_step()
-            if current_step and current_step.result_value == "FAIL":
+            if current_step and current_step.result_value in ["FAIL", "KALDI"]:
                 self.status_bar_widget.update_emoji(is_happy=False)
             else:
                 self.status_bar_widget.update_emoji(is_happy=True)
@@ -393,11 +414,23 @@ class MainWindow(QMainWindow):
         """Handle test completion"""
         self.status_bar.showMessage("Test tamamlandı!")
         
-        QMessageBox.information(
+        # >>> NEW: Final update to export button with completed session <<<
+        if hasattr(self.test_manager, 'session') and self.test_manager.session:
+            self.content_widget.set_session(self.test_manager.session)
+            logger.debug("Export button updated with completed session")
+        
+        # >>> OPTIONAL: Prompt for export <<<
+        result = QMessageBox.question(
             self,
             "Tamamlandı",
-            config.Labels.TEST_COMPLETE
+            "Test tamamlandı!\n\nŞimdi Excel raporu oluşturmak ister misiniz?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
         )
-        logger.info("Test procedure completed")
         
-        # Could add export functionality here in future
+        if result == QMessageBox.Yes:
+            # Trigger export button click
+            if hasattr(self.content_widget, 'export_button'):
+                self.content_widget.export_button.click()
+        
+        logger.info("Test procedure completed")

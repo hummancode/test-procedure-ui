@@ -1,8 +1,8 @@
 """
-Content Widget - Row 3 (REFACTORED)
+Content Widget - Row 3 (REFACTORED with Excel Export - FINAL CORRECTED)
 Main orchestrator for content area components
 """
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox)
 from PyQt5.QtCore import pyqtSignal
 from typing import Optional
 
@@ -12,6 +12,7 @@ from ui.widgets.content.image_viewer import ImageViewer
 from ui.widgets.content.description_panel import DescriptionPanel
 from ui.widgets.content.input_widgets import NumberInputWidget, PassFailInputWidget
 from ui.widgets.content.button_panel import ButtonPanel
+from ui.widgets.content.export_button import ExportButton
 from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -19,11 +20,11 @@ logger = setup_logger(__name__)
 
 class ContentWidget(QWidget):
     """
-    Row 3: Main Content Area (Refactored Orchestrator)
+    Row 3: Main Content Area (Refactored Orchestrator with Excel Export)
     
     Layout:
     - Left (40%): ImageViewer
-    - Right (60%): DescriptionPanel + Input widgets + ButtonPanel
+    - Right (60%): DescriptionPanel + Input widgets + ButtonPanel (with Export added)
     
     Signals:
         result_submitted: (result_value, checkbox_value, comment, is_valid)
@@ -62,7 +63,7 @@ class ContentWidget(QWidget):
         
         self.setLayout(main_layout)
         
-        logger.debug("ContentWidget initialized (refactored)")
+        logger.debug("ContentWidget initialized (refactored with export)")
     
     def _create_right_container(self) -> QWidget:
         """Create right side container with description + input + buttons"""
@@ -98,9 +99,37 @@ class ContentWidget(QWidget):
         self.error_label.hide()
         layout.addWidget(self.error_label)
         
-        # Button panel (15%)
+        # >>> CREATE EXPORT BUTTON <<<
+        self.export_button = ExportButton()
+        
+        # >>> CREATE BUTTON PANEL (already has İlerle button) <<<
         self.button_panel = ButtonPanel()
         self.button_panel.proceed_clicked.connect(self._on_proceed_clicked)
+        
+        # >>> INSERT EXPORT BUTTON INTO BUTTONPANEL'S LAYOUT <<<
+        # ButtonPanel structure from button_panel.py:
+        # - Main layout: QVBoxLayout
+        #   - comment_text (QTextEdit)
+        #   - button_container (QWidget)
+        #     - button_layout (QHBoxLayout)  ← We need to add export here
+        #       - comment_button
+        #       - stretch
+        #       - proceed_button
+        
+        # Access the button_container's layout
+        # ButtonPanel.layout() returns the main VBoxLayout
+        # We need to get the button_container widget, then its layout
+        main_vbox = self.button_panel.layout()
+        if main_vbox and main_vbox.count() >= 2:
+            # Second item is button_container
+            button_container = main_vbox.itemAt(1).widget()
+            if button_container:
+                button_hbox = button_container.layout()
+                if button_hbox:
+                    # Insert export button at position 0 (before comment_button)
+                    button_hbox.insertWidget(0, self.export_button)
+                    logger.debug("Export button added to ButtonPanel layout")
+        
         layout.addWidget(self.button_panel, 15)
         
         container.setLayout(layout)
@@ -155,6 +184,19 @@ class ContentWidget(QWidget):
         
         logger.info(f"Content updated for step: {step_name} (type: {input_type.value})")
     
+    def set_session(self, session):
+        """
+        Update the export button with current test session.
+        
+        This allows the export button to access session data for Excel export.
+        
+        Args:
+            session: TestSession object containing test data and results
+        """
+        if hasattr(self, 'export_button'):
+            self.export_button.set_session(session)
+            logger.debug(f"Export button updated with session: {session.session_id if session else None}")
+    
     def _on_proceed_clicked(self):
         """Handle İlerle button click"""
         # Handle InputType.NONE - no validation needed
@@ -202,5 +244,4 @@ class ContentWidget(QWidget):
         """Check if result has been written"""
         if self.current_input_widget:
             return self.current_input_widget.is_result_written()
-        return False# -*- coding: utf-8 -*-
-
+        return False
