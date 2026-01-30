@@ -42,7 +42,7 @@ class TestManager(QObject):
     test_completed = pyqtSignal()
     result_submitted = pyqtSignal(int, object, str)  # index, value, status
     
-    def __init__(self):
+    def __init__(self, auth_manager=None):
         super().__init__()
         
         # Specialized managers
@@ -61,7 +61,7 @@ class TestManager(QObject):
         
         # Continuous writer
         self.continuous_writer = ContinuousWriter()
-        
+        self.auth_manager = auth_manager
         logger.info("TestManager initialized (refactored)")
     
     # ════════════════════════════════════════════════════════
@@ -142,12 +142,15 @@ class TestManager(QObject):
             target_index: Step to navigate to
             mode: Navigation mode (NORMAL, VIEW_ONLY, etc.)
         """
+        user_role = None
+        if self.auth_manager:
+            user_role = self.auth_manager.get_role()
         # Validate navigation
         allowed, reason = self.navigation_manager.can_navigate_to(
             self.current_step_index,
             target_index,
             len(self.steps),
-            self.steps
+            self.steps, user_role=user_role 
         )
         
         if not allowed:

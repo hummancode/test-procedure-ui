@@ -30,6 +30,7 @@ class Colors:
     INFO = "#2196f3"                    # Blue (informational)
     
     # UI Element Colors
+    BORDER = "#455a64" 
     BORDER_COLOR = "#455a64"            # Subtle borders
     INPUT_BACKGROUND = "#37474f"        # Input fields, image containers
     BUTTON_PRIMARY = "#2196f3"          # Action buttons
@@ -123,7 +124,9 @@ FONT_SIZE_EMOJI = 58        # Emoji size (was 36pt)
 FONT_SIZE_DESCRIPTION = 17  # Description text (was 11pt)
 FONT_SIZE_BUTTON = 18       # Button text
 FONT_SIZE_ERROR = 14        # Error messages
-
+FONT_SIZE_TITLE = 38        # Row 2 step title (was 14pt, now bigger!)
+FONT_SIZE_RESULT = 14       # Sonuç: result display (NEW - bold!)
+FONT_SIZE_DIALOG = 13      
 
 # ============================================================================
 # TIMER SETTINGS
@@ -141,7 +144,7 @@ TIMER_CRITICAL_THRESHOLD = 10  # Red when < 10% time left
 # ============================================================================
 
 ROW_1_HEIGHT = 35  # Header info bar
-ROW_2_HEIGHT = 50  # Step title (increased from 45 for padding)
+ROW_2_HEIGHT = 70  # Step title (increased from 45 for padding)
 ROW_4_HEIGHT = 180  # Status bar (2.5x increase from original 70, was 90)
 # ROW_3 is flexible (fills remaining space)
 
@@ -182,7 +185,8 @@ BUTTON_WRITE_WIDTH = 80
 BUTTON_WRITE_HEIGHT = 40
 BUTTON_COMMENT_WIDTH = 150
 BUTTON_COMMENT_HEIGHT = 40
-
+DIALOG_BUTTON_WIDTH = 120
+DIALOG_BUTTON_HEIGHT = 40
 # Input fields
 INPUT_FIELD_WIDTH = 150
 INPUT_FIELD_HEIGHT = 40
@@ -255,3 +259,75 @@ EMOJI_NEUTRAL = "😐"
 
 ANIMATION_DURATION = 200  # milliseconds for smooth transitions
 DEFAULT_UPDATE_INTERVAL = 10  # seconds
+# ============================================================================
+# USER ROLES & AUTHENTICATION
+# ============================================================================
+
+class UserRole:
+    """
+    3 User role types:
+    
+    1. DEVELOPER - All admin rights + can edit test steps (future)
+    2. ADMIN - Can navigate back, edit results, export reports  
+    3. OPERATOR - Basic test execution only (no password)
+    
+    Hierarchy: DEVELOPER > ADMIN > OPERATOR
+    """
+    # Role identifiers
+    ADMIN = "admin"
+    OPERATOR = "operator"
+    DEVELOPER = "developer"
+    
+    # Display names (Turkish)
+    DISPLAY_NAMES = {
+        ADMIN: "Yönetici",
+        OPERATOR: "Operatör",
+        DEVELOPER: "Geliştirici"
+    }
+    
+    # Roles that can navigate backward
+    BACKWARD_NAV_ROLES = [ADMIN, DEVELOPER]
+    
+    # Roles that can edit submitted results
+    EDIT_ROLES = [ADMIN, DEVELOPER]
+    
+    # Roles that can export reports
+    EXPORT_ROLES = [ADMIN, DEVELOPER]
+    
+    # Roles that can edit test steps (Developer mode - future feature)
+    EDIT_STEPS_ROLES = [DEVELOPER]
+    
+    # Roles that require password login
+    PASSWORD_REQUIRED_ROLES = [ADMIN, DEVELOPER]
+    
+    @classmethod
+    def get_display_name(cls, role: str) -> str:
+        """Get Turkish display name for a role."""
+        return cls.DISPLAY_NAMES.get(role, role)
+    
+    @classmethod
+    def can_navigate_back(cls, role: str) -> bool:
+        """Check if role can navigate to previous steps."""
+        return role in cls.BACKWARD_NAV_ROLES
+    
+    @classmethod
+    def can_edit_results(cls, role: str) -> bool:
+        """Check if role can edit submitted results."""
+        return role in cls.EDIT_ROLES
+    
+    @classmethod
+    def can_export(cls, role: str) -> bool:
+        """Check if role can export reports."""
+        return role in cls.EXPORT_ROLES
+    
+    @classmethod
+    def can_edit_test_steps(cls, role: str) -> bool:
+        """Check if role can edit test steps (Developer mode)."""
+        return role in cls.EDIT_STEPS_ROLES
+
+
+# Default admin credentials (used as fallback if users.json not found)
+DEFAULT_ADMIN_PASSWORD = "admin123"  # Change in production!
+
+# Path to users file
+USERS_FILE_PATH = "data/users.json"

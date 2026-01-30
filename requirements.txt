@@ -1,0 +1,24 @@
+# Test Procedure Application - Python Dependencies
+# For PyInstaller builds
+
+# GUI Framework
+PyQt5==5.15.10
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.13.0
+
+# Excel Export
+openpyxl==3.1.2
+et-xmlfile==1.1.0
+
+# UI Themes
+qt-material==2.14
+qdarkstyle==3.2.1
+
+# Required for Excel/JSON
+Jinja2==3.1.2
+
+# Build Tool (for creating executable)
+pyinstaller==6.3.0
+
+# Optional but recommended
+# Pillow==10.1.0  # If you need to create/convert icons

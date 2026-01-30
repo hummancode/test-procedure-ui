@@ -5,7 +5,7 @@ Exports test results to formatted Excel files
 from typing import Optional, List
 from datetime import datetime
 from pathlib import Path
-import pandas as pd
+
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter

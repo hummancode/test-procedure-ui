@@ -1,9 +1,11 @@
 """
 TestStep Data Model
 Represents a single step in the test procedure
+UPDATED: Added completed_by and completed_at fields to track who/when completed the step
 """
 from typing import Optional, Dict, Any
 from datetime import datetime
+import time
 from models.enums import TestStatus, InputType
 import config
 
@@ -24,8 +26,10 @@ class TestStep:
         status: Current status of the step (TestStatus enum)
         result_value: User-entered result value
         actual_duration: Actual time taken to complete (seconds)
-        start_time: Unix timestamp when step started
-        comment: Optional comment from user
+        comment: Optional comment for the step
+        start_time: When the step was started (Unix timestamp)
+        completed_by: Display name of user who completed the step
+        completed_at: Timestamp when step was completed (overwrites on re-do)
     """
     
     def __init__(
@@ -52,8 +56,12 @@ class TestStep:
         self.status = TestStatus.NOT_STARTED
         self.result_value: Optional[Any] = None
         self.actual_duration: Optional[int] = None
-        self.start_time: Optional[float] = None  # Unix timestamp
+        self.start_time: Optional[float] = None
         self.comment: Optional[str] = None
+        
+        # User tracking (OVERWRITES on re-submission)
+        self.completed_by: Optional[str] = None   # e.g., "Ali Yılmaz", "Sistem Yöneticisi"
+        self.completed_at: Optional[float] = None  # Unix timestamp when completed
         
     @property
     def requires_input(self) -> bool:
@@ -61,26 +69,39 @@ class TestStep:
         return self.input_type != InputType.NONE
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
+        """
+        Convert to dictionary for JSON serialization.
+        
+        Output order is organized for readability:
+        1. Step definition (id, name, time_limit, validation)
+        2. Execution state (status, result, duration)
+        3. User tracking (completed_by, completed_at)
+        4. Comments
+        """
         return {
+            # Step definition
             'step_id': self.step_id,
             'name': self.name,
-            'description': self.description,
             'time_limit': self.time_limit,
-            'image_path': self.image_path,
-            'input_type': self.input_type.value,
-            'input_label': self.input_label,
             'input_validation': self.input_validation,
+            
+            # Execution state
             'status': self.status.value,
             'result_value': self.result_value,
             'actual_duration': self.actual_duration,
             'start_time': self._format_timestamp(self.start_time),
+            
+            # User tracking (OVERWRITES on re-submission)
+            'completed_by': self.completed_by,
+            'completed_at': self._format_timestamp(self.completed_at),
+            
+            # Comments
             'comment': self.comment
         }
     
     def _format_timestamp(self, timestamp: Optional[float]) -> Optional[str]:
         """
-        Format Unix timestamp to readable string.
+        Format Unix timestamp to human-readable string.
         
         Args:
             timestamp: Unix timestamp (seconds since epoch)
@@ -120,6 +141,10 @@ class TestStep:
             step.actual_duration = data['actual_duration']
         if 'comment' in data:
             step.comment = data['comment']
+        if 'completed_by' in data:
+            step.completed_by = data['completed_by']
+        if 'completed_at' in data:
+            step.completed_at = data['completed_at']
             
         return step
     

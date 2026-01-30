@@ -1,6 +1,7 @@
 """
 Main Window
 Main application window with menu bar, sidebar, continuous data writing, and Excel export
+UPDATED: Added user switching feature (Kullanıcı menu)
 """
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, 
                              QFileDialog, QMenuBar, QMenu, QAction, QStatusBar, QPushButton)
@@ -9,7 +10,7 @@ from PyQt5.QtGui import QFont
 import os
 
 from ui.widgets import HeaderWidget, TitleWidget, ContentWidget, StatusBarWidget, ProgressNavigator
-from ui.dialogs import UpdateSettingsDialog
+from ui.dialogs import UpdateSettingsDialog, SwitchUserDialog
 from managers import TestManager
 from models.enums import InputType, TimerStatus
 from persistence import ContinuousWriter
@@ -24,7 +25,7 @@ class MainWindow(QMainWindow):
     Main application window with menu bar, sidebar, continuous data writing, and Excel export.
     
     Layout:
-    - Menu Bar: File and View menus
+    - Menu Bar: File, View, and User menus
     - Row 1: Header (test info + timestamp)
     - Row 2: Step title
     - Row 3: Content (image + description + input + export button)
@@ -33,22 +34,33 @@ class MainWindow(QMainWindow):
     - Status Bar: Show continuous writer status
     """
     
-    def __init__(self):
+    def __init__(self, auth_manager=None):
         super().__init__()
         
-        # Initialize test manager
-        self.test_manager = TestManager()
-        
-        # Sidebar state
+        self.auth_manager = auth_manager
+        self.test_manager = TestManager(auth_manager=auth_manager)
         self.sidebar_visible = False
         
-        # Setup UI
-        self._init_ui()
+        self._init_ui()              # ← Sidebar created here
         self._create_menu_bar()
         self._create_status_bar()
         self._connect_signals()
         
-        logger.info("MainWindow initialized with Excel export support")
+        # Update user display in menu after menu is created
+        if self.auth_manager:
+            self._update_user_display()
+        
+        # Enable sidebar clicking if admin
+        if self.auth_manager and self.auth_manager.is_admin():
+            if hasattr(self, 'sidebar') and self.sidebar is not None:
+                self.sidebar.set_clickable(True)
+                logger.info("✓ Sidebar set to clickable mode (admin user)")
+            else:
+                logger.warning("✗ Sidebar not found - cannot enable clickable")
+        else:
+            logger.info("Operator mode - sidebar not clickable")
+        
+        logger.info("MainWindow initialized with authentication support")
     
     def _init_ui(self):
         """Initialize the user interface"""
@@ -105,7 +117,7 @@ class MainWindow(QMainWindow):
         logger.debug("UI layout created with sidebar support")
     
     def _create_menu_bar(self):
-        """Create menu bar with File and View menus"""
+        """Create menu bar with File, View, and User menus"""
         menubar = self.menuBar()
         menubar.setStyleSheet(f"""
             QMenuBar {{
@@ -124,9 +136,14 @@ class MainWindow(QMainWindow):
             QMenu::item:selected {{
                 background-color: {config.Colors.ACCENT_BLUE};
             }}
+            QMenu::item:disabled {{
+                color: {config.Colors.TEXT_SECONDARY};
+            }}
         """)
         
+        # ====================================================================
         # File menu
+        # ====================================================================
         file_menu = menubar.addMenu(config.Labels.MENU_FILE)
         
         # Update settings action
@@ -141,7 +158,9 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
+        # ====================================================================
         # View menu
+        # ====================================================================
         view_menu = menubar.addMenu(config.Labels.MENU_VIEW)
         
         # Toggle sidebar action
@@ -152,7 +171,25 @@ class MainWindow(QMainWindow):
         self.toggle_sidebar_action.triggered.connect(self.toggle_sidebar)
         view_menu.addAction(self.toggle_sidebar_action)
         
-        logger.debug("Menu bar created with View menu")
+        # ====================================================================
+        # User menu (NEW)
+        # ====================================================================
+        self.user_menu = menubar.addMenu("Kullanıcı")
+        
+        # Current user display (disabled, just for info)
+        self.current_user_action = QAction("", self)
+        self.current_user_action.setEnabled(False)
+        self.user_menu.addAction(self.current_user_action)
+        
+        self.user_menu.addSeparator()
+        
+        # Switch user action
+        self.switch_user_action = QAction("Kullanıcı Değiştir...", self)
+        self.switch_user_action.setShortcut("Ctrl+U")
+        self.switch_user_action.triggered.connect(self._on_switch_user)
+        self.user_menu.addAction(self.switch_user_action)
+        
+        logger.debug("Menu bar created with File, View, and User menus")
     
     def _create_status_bar(self):
         """Create status bar to show continuous writer status"""
@@ -171,6 +208,95 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(f"Güncelleme klasörü: {current_folder}")
         
         logger.debug("Status bar created")
+    
+    # ========================================================================
+    # User Switching Methods (NEW)
+    # ========================================================================
+    
+    def _update_user_display(self):
+        """
+        Update the current user display in menu and window title.
+        
+        Called when:
+        - Application starts
+        - User switches role
+        """
+        if not self.auth_manager:
+            return
+        
+        role = self.auth_manager.get_role()
+        display_name = self.auth_manager.get_display_name()
+        
+        # Update menu item text
+        if role == config.UserRole.ADMIN:
+            role_text = "Yönetici"
+            self.current_user_action.setText(f"👤 {display_name} ({role_text})")
+            self.setWindowTitle(f"{config.WINDOW_TITLE} - YÖNETİCİ MODU")
+        else:
+            role_text = "Operatör"
+            self.current_user_action.setText(f"👤 {display_name} ({role_text})")
+            self.setWindowTitle(config.WINDOW_TITLE)
+        
+        logger.debug(f"User display updated: {display_name} ({role_text})")
+    
+    def _on_switch_user(self):
+        """
+        Open switch user dialog.
+        
+        Triggered by:
+        - Menu: Kullanıcı → Kullanıcı Değiştir...
+        - Shortcut: Ctrl+U
+        """
+        if not self.auth_manager:
+            logger.warning("No auth manager available for user switching")
+            QMessageBox.warning(
+                self,
+                "Uyarı",
+                "Kullanıcı yönetimi aktif değil.",
+                QMessageBox.Ok
+            )
+            return
+        
+        dialog = SwitchUserDialog(self.auth_manager, self)
+        dialog.user_switched.connect(self._on_user_switched)
+        dialog.exec_()
+    
+    def _on_user_switched(self, new_role: str):
+        """
+        Handle user role change.
+        
+        Updates:
+        - Menu display
+        - Window title
+        - Sidebar clickable state
+        - Status bar message
+        
+        Args:
+            new_role: The new user role (config.UserRole.ADMIN or OPERATOR)
+        """
+        logger.info(f"User role changed to: {new_role}")
+        
+        # Update user display in menu and title
+        self._update_user_display()
+        
+        # Update sidebar clickable state based on new role
+        if hasattr(self, 'sidebar') and self.sidebar is not None:
+            is_admin = self.auth_manager.is_admin()
+            self.sidebar.set_clickable(is_admin)
+            
+            if is_admin:
+                logger.info("✓ Sidebar navigation enabled (admin mode)")
+            else:
+                logger.info("✗ Sidebar navigation disabled (operator mode)")
+        
+        # Show status bar message
+        if hasattr(self, 'status_bar') and self.status_bar:
+            role_text = "Yönetici" if new_role == config.UserRole.ADMIN else "Operatör"
+            self.status_bar.showMessage(f"Kullanıcı değiştirildi: {role_text}", 5000)
+    
+    # ========================================================================
+    # Existing Methods
+    # ========================================================================
     
     def toggle_sidebar(self):
         """Toggle sidebar visibility"""
@@ -201,6 +327,9 @@ class MainWindow(QMainWindow):
         )
         
         logger.debug("Signals connected")
+        if hasattr(self, 'sidebar') and self.sidebar:
+            self.sidebar.step_clicked.connect(self._on_sidebar_step_clicked)
+            logger.debug("Sidebar step_clicked signal connected")
     
     def _on_open_update_settings(self):
         """Open update settings dialog"""
@@ -210,6 +339,17 @@ class MainWindow(QMainWindow):
         )
         dialog.settings_changed.connect(self._on_settings_changed)
         dialog.exec_()
+    
+    def _on_sidebar_step_clicked(self, step_index: int):
+        """
+        Handle sidebar step click (backward navigation for admin).
+        
+        Args:
+            step_index: Index of clicked step
+        """
+        from models.enums import NavigationMode
+        logger.info(f"Sidebar step clicked: navigating to step {step_index}")
+        self.test_manager.navigate_to_step(step_index, NavigationMode.VIEW_ONLY)
     
     def _on_settings_changed(self):
         """Handle settings changed - update the continuous writer"""
@@ -248,7 +388,7 @@ class MainWindow(QMainWindow):
             if self.sidebar:
                 self.sidebar.set_steps(self.test_manager.steps)
             
-            # >>> NEW: Update export button with session <<<
+            # Update export button with session
             if hasattr(self.test_manager, 'session') and self.test_manager.session:
                 self.content_widget.set_session(self.test_manager.session)
                 logger.debug("Export button enabled with loaded session")
@@ -276,7 +416,7 @@ class MainWindow(QMainWindow):
         
         success = self.test_manager.start_test()
         if success:
-            # >>> NEW: Update export button with started session <<<
+            # Update export button with started session
             if hasattr(self.test_manager, 'session') and self.test_manager.session:
                 self.content_widget.set_session(self.test_manager.session)
                 logger.debug("Export button updated after test start")
@@ -316,7 +456,7 @@ class MainWindow(QMainWindow):
             input_validation=current_step.input_validation
         )
         
-        # >>> NEW: Update export button with latest session state <<<
+        # Update export button with latest session state
         if hasattr(self.test_manager, 'session') and self.test_manager.session:
             self.content_widget.set_session(self.test_manager.session)
         
@@ -414,12 +554,12 @@ class MainWindow(QMainWindow):
         """Handle test completion"""
         self.status_bar.showMessage("Test tamamlandı!")
         
-        # >>> NEW: Final update to export button with completed session <<<
+        # Final update to export button with completed session
         if hasattr(self.test_manager, 'session') and self.test_manager.session:
             self.content_widget.set_session(self.test_manager.session)
             logger.debug("Export button updated with completed session")
         
-        # >>> OPTIONAL: Prompt for export <<<
+        # Prompt for export
         result = QMessageBox.question(
             self,
             "Tamamlandı",

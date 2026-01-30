@@ -1,5 +1,5 @@
 """
-Image Viewer Widget
+Image Viewer Widget (STEP 1 UPDATE: Reduced padding)
 Displays test step images with fallback placeholder
 """
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
@@ -16,6 +16,8 @@ logger = setup_logger(__name__)
 class ImageViewer(QWidget):
     """
     Image display widget for test steps.
+    
+    STEP 1 CHANGE: Reduced padding from 10px to 5px for larger image display
     
     Displays:
     - Test step image (scaled to fit)
@@ -37,7 +39,8 @@ class ImageViewer(QWidget):
         """)
         
         layout = QVBoxLayout()
-        layout.setContentsMargins(10, 10, 10, 10)
+        # CHANGE: Reduced padding from 10 to 5 for larger image display
+        layout.setContentsMargins(5, 5, 5, 5)
         
         # Image label
         self.image_label = QLabel()
@@ -51,7 +54,7 @@ class ImageViewer(QWidget):
         layout.addWidget(self.image_label)
         self.setLayout(layout)
         
-        logger.debug("ImageViewer initialized")
+        logger.debug("ImageViewer initialized (Step 1: Reduced padding)")
     
     def load_image(self, image_path: Optional[str]):
         """
@@ -85,5 +88,4 @@ class ImageViewer(QWidget):
             font-size: 18pt;
             border: none;
         """)
-        logger.debug("Placeholder image displayed")# -*- coding: utf-8 -*-
-
+        logger.debug("Placeholder image displayed")

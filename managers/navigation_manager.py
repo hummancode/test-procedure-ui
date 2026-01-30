@@ -7,7 +7,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 
 from models.enums import NavigationMode, TestStatus
 from utils.logger import setup_logger
-
+import config
 logger = setup_logger(__name__)
 
 
@@ -37,7 +37,8 @@ class NavigationManager(QObject):
         logger.info("NavigationManager initialized")
     
     def can_navigate_to(self, current_index: int, target_index: int, 
-                       total_steps: int, steps_data: list) -> Tuple[bool, str]:
+                       total_steps: int, steps_data: list, 
+                       user_role: str = None) -> Tuple[bool, str]:
         """
         Validate if navigation to target step is allowed.
         
@@ -46,6 +47,7 @@ class NavigationManager(QObject):
             target_index: Target step index
             total_steps: Total number of steps
             steps_data: List of TestStep objects
+            user_role: Current user role (from AuthManager)
             
         Returns:
             (allowed: bool, reason: str)
@@ -57,21 +59,25 @@ class NavigationManager(QObject):
         if target_index == current_index:
             return (False, "Zaten bu adımdasınız")
         
-        # ════════════════════════════════════════════════════════
-        # FUTURE: Add business rules here
-        # ════════════════════════════════════════════════════════
+        # ========================================================================
+        # ROLE-BASED NAVIGATION RULES
+        # ========================================================================
         
-        # Example rule: Can't skip more than 2 steps forward
-        # if target_index > current_index + 2:
-        #     return (False, "En fazla 2 adım atlayabilirsiniz")
+        # Going backward (to previous steps)
+        if target_index < current_index:
+            # Only admins can go backward
+            if user_role == config.UserRole.ADMIN:
+                logger.info(f"Admin navigating backward: {current_index} → {target_index}")
+                return (True, "")
+            else:
+                return (False, "Geri gitme yetkisi yok. Sadece yönetici geri gidebilir.")
         
-        # Example rule: Can't go back to failed steps
-        # if target_index < current_index:
-        #     target_step = steps_data[target_index]
-        #     if target_step.status == TestStatus.FAILED:
-        #         return (False, "Başarısız adıma geri dönemezsiniz")
+        # Going forward (to next steps)
+        elif target_index > current_index:
+            # Everyone can go forward (sequential)
+            # In the future, might add: "can only skip 1 step" rule
+            return (True, "")
         
-        # For now: Allow all navigation
         return (True, "")
     
     def determine_navigation_mode(self, current_index: int, target_index: int,

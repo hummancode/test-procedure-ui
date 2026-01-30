@@ -13,7 +13,9 @@ logger = setup_logger(__name__)
 
 class NumberInputWidget(BaseInputWidget):
     """
-    NUMBER input type: [Input] [YAZ] Sonuç: [Result]
+    NUMBER input type: [Input] [YAZ] [Result]
+    
+    UPDATED: Removed "Sonuç:" label, result displays directly with larger font
     
     Features:
     - Numeric input field
@@ -70,27 +72,26 @@ class NumberInputWidget(BaseInputWidget):
         """)
         self.write_button.clicked.connect(self._on_write_clicked)
         
-        # Result display
+        # Result display - BIGGER FONT, NO LABEL
         self.result_display = QLabel("")
         self.result_display.setMinimumWidth(config.RESULT_DISPLAY_MIN_WIDTH)
         self.result_display.setStyleSheet(f"""
             QLabel {{
                 color: {config.Colors.SUCCESS};
-                font-size: {config.FONT_SIZE}pt;
+                font-size: 20pt;
                 font-weight: bold;
             }}
         """)
         
-        # Add to layout
+        # Add to layout - NO "Sonuç:" LABEL ANYMORE
         layout.addWidget(self.number_input)
         layout.addWidget(self.write_button)
-        layout.addWidget(QLabel(config.Labels.RESULT_LABEL))
-        layout.addWidget(self.result_display)
+        layout.addWidget(self.result_display)  # Just the value!
         layout.addStretch()
         
         self.setLayout(layout)
         
-        logger.debug("NumberInputWidget initialized")
+        logger.debug("NumberInputWidget initialized (no Sonuç label, bigger font)")
     
     def _on_write_clicked(self):
         """Handle YAZ button click - ALLOWS INVALID VALUES"""
@@ -111,12 +112,12 @@ class NumberInputWidget(BaseInputWidget):
         is_valid = self._check_number_range(value)
         
         if not is_valid:
-            # Write in ORANGE (warning color)
+            # Write in ORANGE (warning color) - BIGGER FONT
             self.result_display.setText(input_text)
             self.result_display.setStyleSheet(f"""
                 QLabel {{
                     color: {config.Colors.WARNING};
-                    font-size: {config.FONT_SIZE}pt;
+                    font-size: 20pt;
                     font-weight: bold;
                 }}
             """)
@@ -124,12 +125,12 @@ class NumberInputWidget(BaseInputWidget):
             # Update emoji to sad (invalid = failed)
             self.emoji_update_requested.emit(False)
         else:
-            # Write in GREEN (valid)
+            # Write in GREEN (valid) - BIGGER FONT
             self.result_display.setText(input_text)
             self.result_display.setStyleSheet(f"""
                 QLabel {{
                     color: {config.Colors.SUCCESS};
-                    font-size: {config.FONT_SIZE}pt;
+                    font-size: 20pt;
                     font-weight: bold;
                 }}
             """)
@@ -190,5 +191,4 @@ class NumberInputWidget(BaseInputWidget):
         """Reset widget to initial state"""
         self.number_input.clear()
         self.result_display.clear()
-        self.result_written = False# -*- coding: utf-8 -*-
-
+        self.result_written = False

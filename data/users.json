@@ -1,0 +1,119 @@
+{
+    "version": "1.0",
+    "description": "Kullanıcı tanımları - 3 Rol Tipi: Admin, Operator, Developer",
+    "users": {
+        "admins": [
+            {
+                "username": "admin",
+                "password_hash": "0192023a7bbd73250516f069df18b500",
+                "display_name": "Sistem Yöneticisi",
+                "employee_id": "ADM001",
+                "department": "IT",
+                "active": true
+            },
+            {
+                "username": "admin2",
+                "password_hash": "0192023a7bbd73250516f069df18b500",
+                "display_name": "Yedek Yönetici",
+                "employee_id": "ADM002",
+                "department": "IT",
+                "active": true
+            }
+        ],
+        "operators": [
+            {
+                "username": "op1",
+                "password_hash": "",
+                "display_name": "Ali Yılmaz",
+                "employee_id": "OP001",
+                "department": "Üretim Hattı A",
+                "active": true
+            },
+            {
+                "username": "op2",
+                "password_hash": "",
+                "display_name": "Ayşe Kaya",
+                "employee_id": "OP002",
+                "department": "Üretim Hattı A",
+                "active": true
+            },
+            {
+                "username": "op3",
+                "password_hash": "",
+                "display_name": "Mehmet Demir",
+                "employee_id": "OP003",
+                "department": "Üretim Hattı B",
+                "active": true
+            },
+            {
+                "username": "op4",
+                "password_hash": "",
+                "display_name": "Fatma Öztürk",
+                "employee_id": "OP004",
+                "department": "Üretim Hattı B",
+                "active": true
+            },
+            {
+                "username": "op5",
+                "password_hash": "",
+                "display_name": "Mustafa Çelik",
+                "employee_id": "OP005",
+                "department": "Üretim Hattı C",
+                "active": true
+            }
+        ],
+        "developers": [
+            {
+                "username": "dev1",
+                "password_hash": "e99a18c428cb38d5f260853678922e03",
+                "display_name": "Zeynep Aksoy (Dev)",
+                "employee_id": "DEV001",
+                "department": "Yazılım",
+                "active": true
+            },
+            {
+                "username": "dev2",
+                "password_hash": "e99a18c428cb38d5f260853678922e03",
+                "display_name": "Can Yıldırım (Dev)",
+                "employee_id": "DEV002",
+                "department": "Yazılım",
+                "active": true
+            }
+        ]
+    },
+    "roles": {
+        "admin": {
+            "display_name": "Yönetici",
+            "can_navigate_back": true,
+            "can_edit_results": true,
+            "can_export": true,
+            "can_manage_users": true,
+            "can_edit_test_steps": false,
+            "requires_password": true
+        },
+        "operator": {
+            "display_name": "Operatör",
+            "can_navigate_back": false,
+            "can_edit_results": false,
+            "can_export": true,
+            "can_manage_users": false,
+            "can_edit_test_steps": false,
+            "requires_password": true
+        },
+        "developer": {
+            "display_name": "Geliştirici",
+            "can_navigate_back": true,
+            "can_edit_results": true,
+            "can_export": true,
+            "can_manage_users": true,
+            "can_edit_test_steps": true,
+            "requires_password": true
+        }
+    },
+    "_passwords_for_testing": {
+        "admin": "admin123",
+        "admin2": "admin123",
+        "dev1": "abc123",
+        "dev2": "abc123"
+    }
+}

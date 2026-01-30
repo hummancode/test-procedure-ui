@@ -13,7 +13,9 @@ logger = setup_logger(__name__)
 
 class PassFailInputWidget(BaseInputWidget):
     """
-    PASS_FAIL input type: [GEÇTİ] [KALDI] [YAZ] Sonuç: [Result]
+    PASS_FAIL input type: [GEÇTİ] [KALDI] [YAZ] [Result]
+    
+    UPDATED: Removed "Sonuç:" label, result displays directly with larger font
     
     Features:
     - Mutually exclusive checkboxes
@@ -84,28 +86,27 @@ class PassFailInputWidget(BaseInputWidget):
         """)
         self.write_button.clicked.connect(self._on_write_clicked)
         
-        # Result display
+        # Result display - BIGGER FONT, NO LABEL
         self.result_display = QLabel("")
         self.result_display.setMinimumWidth(config.RESULT_DISPLAY_MIN_WIDTH)
         self.result_display.setStyleSheet(f"""
             QLabel {{
                 color: {config.Colors.SUCCESS};
-                font-size: {config.FONT_SIZE}pt;
+                font-size: 20pt;
                 font-weight: bold;
             }}
         """)
         
-        # Add to layout
+        # Add to layout - NO "Sonuç:" LABEL ANYMORE
         layout.addWidget(self.pass_checkbox)
         layout.addWidget(self.fail_checkbox)
         layout.addWidget(self.write_button)
-        layout.addWidget(QLabel(config.Labels.RESULT_LABEL))
-        layout.addWidget(self.result_display)
+        layout.addWidget(self.result_display)  # Just GEÇTİ/KALDI!
         layout.addStretch()
         
         self.setLayout(layout)
         
-        logger.debug("PassFailInputWidget initialized")
+        logger.debug("PassFailInputWidget initialized (no Sonuç label, bigger font)")
     
     def _on_checkbox_changed(self, state, checkbox_type):
         """Handle checkbox state change (mutually exclusive)"""
@@ -132,12 +133,12 @@ class PassFailInputWidget(BaseInputWidget):
             result_color = config.Colors.ERROR  # Red
             is_happy = False
         
-        # Write to result display
+        # Write to result display - BIGGER FONT
         self.result_display.setText(result_text)
         self.result_display.setStyleSheet(f"""
             QLabel {{
                 color: {result_color};
-                font-size: {config.FONT_SIZE}pt;
+                font-size: 20pt;
                 font-weight: bold;
             }}
         """)
@@ -177,5 +178,4 @@ class PassFailInputWidget(BaseInputWidget):
         self.pass_checkbox.setChecked(False)
         self.fail_checkbox.setChecked(False)
         self.result_display.clear()
-        self.result_written = False# -*- coding: utf-8 -*-
-
+        self.result_written = False

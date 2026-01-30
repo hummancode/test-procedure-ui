@@ -1,32 +1,32 @@
 {
-  "session_id": "20260124_190228",
+  "session_id": "20260130_142601",
   "stock_number": "ABC123",
   "serial_number": "456789",
   "station_number": "ST-01",
   "sip_code": "X99",
-  "start_time": "2026-01-24T19:02:28.297637",
+  "start_time": "2026-01-30T14:26:01.658909",
   "end_time": null,
-  "duration_seconds": 0,
-  "completion_percentage": 0.0,
+  "duration_seconds": 2612,
+  "completion_percentage": 33.33333333333333,
   "passed_count": 0,
-  "failed_count": 0,
+  "failed_count": 1,
   "steps": [
     {
       "step_id": 1,
       "name": "Görsel Kontrol - Ön Panel",
-      "status": "in_progress",
-      "start_time": "24/01/2026 19:02:28",
-      "actual_duration": null,
-      "result_value": null,
-      "comment": null,
+      "status": "failed",
+      "start_time": "30/01/2026 14:26:01",
+      "actual_duration": 11,
+      "result_value": "FAIL",
+      "comment": "",
       "time_limit": 5,
       "input_validation": {}
     },
     {
       "step_id": 2,
       "name": "Ara Adım - Bilgilendirme",
-      "status": "not_started",
-      "start_time": null,
+      "status": "in_progress",
+      "start_time": "30/01/2026 14:26:13",
       "actual_duration": null,
       "result_value": null,
       "comment": null,
@@ -48,6 +48,6 @@
       }
     }
   ],
-  "last_updated": "2026-01-24T19:02:28.313712",
+  "last_updated": "2026-01-30T15:09:33.978534",
   "file_version": "1.0"
 }
