@@ -156,7 +156,9 @@ class ContinuousWriter:
                 'result_value': step_dict.get('result_value'),
                 'comment': step_dict.get('comment'),  # User comment
                 'time_limit': step_dict['time_limit'],
+                'completed_by': step_dict['completed_by'],
                 'input_validation': step_dict.get('input_validation')  # Min/max values
+                
             }
             formatted_steps.append(formatted_step)
         

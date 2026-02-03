@@ -28,7 +28,8 @@ class ResultManager(QObject):
     result_saved = pyqtSignal(int, object, str)      # step_index, value, status
     result_changed = pyqtSignal(int, object, object)  # step_index, old, new
     
-    def __init__(self):
+    def __init__(self, auth_manager=None):
+        self.auth_manager = auth_manager
         super().__init__()
         logger.info("ResultManager initialized")
     
@@ -65,7 +66,7 @@ class ResultManager(QObject):
         step.result_value = final_value
         step.comment = comment
         step.actual_duration = actual_duration
-        
+        step.completed_by = self.auth_manager.get_display_name()
         # Determine status
         status = self._determine_status(step.input_type, is_valid)
         step.status = status

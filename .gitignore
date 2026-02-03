@@ -22,7 +22,7 @@ data/autosave/*
 data/exports/*
 !data/autosave/.gitkeep
 !data/exports/.gitkeep
-
+codebase.md*
 # Logs
 logs/*.log
 *.log

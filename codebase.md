@@ -502,16 +502,73 @@ DEFAULT_UPDATE_INTERVAL = 10  # seconds
 # ============================================================================
 
 class UserRole:
-    """User role definitions (extensible for future)"""
-    OPERATOR = "operator"  # Normal user - can only go forward
-    ADMIN = "admin"        # Can navigate backward
-    # FUTURE:
-    # SUPERVISOR = "supervisor"
-    # ENGINEER = "engineer"
-    # QUALITY = "quality"
+    """
+    3 User role types:
+    
+    1. DEVELOPER - All admin rights + can edit test steps (future)
+    2. ADMIN - Can navigate back, edit results, export reports  
+    3. OPERATOR - Basic test execution only (no password)
+    
+    Hierarchy: DEVELOPER > ADMIN > OPERATOR
+    """
+    # Role identifiers
+    ADMIN = "admin"
+    OPERATOR = "operator"
+    DEVELOPER = "developer"
+    
+    # Display names (Turkish)
+    DISPLAY_NAMES = {
+        ADMIN: "Yönetici",
+        OPERATOR: "Operatör",
+        DEVELOPER: "Geliştirici"
+    }
+    
+    # Roles that can navigate backward
+    BACKWARD_NAV_ROLES = [ADMIN, DEVELOPER]
+    
+    # Roles that can edit submitted results
+    EDIT_ROLES = [ADMIN, DEVELOPER]
+    
+    # Roles that can export reports
+    EXPORT_ROLES = [ADMIN, DEVELOPER]
+    
+    # Roles that can edit test steps (Developer mode - future feature)
+    EDIT_STEPS_ROLES = [DEVELOPER]
+    
+    # Roles that require password login
+    PASSWORD_REQUIRED_ROLES = [ADMIN, DEVELOPER]
+    
+    @classmethod
+    def get_display_name(cls, role: str) -> str:
+        """Get Turkish display name for a role."""
+        return cls.DISPLAY_NAMES.get(role, role)
+    
+    @classmethod
+    def can_navigate_back(cls, role: str) -> bool:
+        """Check if role can navigate to previous steps."""
+        return role in cls.BACKWARD_NAV_ROLES
+    
+    @classmethod
+    def can_edit_results(cls, role: str) -> bool:
+        """Check if role can edit submitted results."""
+        return role in cls.EDIT_ROLES
+    
+    @classmethod
+    def can_export(cls, role: str) -> bool:
+        """Check if role can export reports."""
+        return role in cls.EXPORT_ROLES
+    
+    @classmethod
+    def can_edit_test_steps(cls, role: str) -> bool:
+        """Check if role can edit test steps (Developer mode)."""
+        return role in cls.EDIT_STEPS_ROLES
 
-# Default admin credentials (will be moved to users.json later)
-DEFAULT_ADMIN_PASSWORD = "admin123"  # Change this in production!
+
+# Default admin credentials (used as fallback if users.json not found)
+DEFAULT_ADMIN_PASSWORD = "admin123"  # Change in production!
+
+# Path to users file
+USERS_FILE_PATH = "data/users.json"
 ```
 
 # data\sample_test.json
@@ -740,14 +797,75 @@ DEFAULT_ADMIN_PASSWORD = "admin123"  # Change this in production!
 
 ```json
 {
-  "session_id": "20260130_110713",
+  "session_id": "20260130_155516",
   "stock_number": "ABC123",
   "serial_number": "456789",
   "station_number": "ST-01",
   "sip_code": "X99",
-  "start_time": "2026-01-30T11:07:13.307407",
+  "start_time": "2026-01-30T15:55:16.193155",
+  "end_time": "2026-01-30T15:55:30.734977",
+  "duration_seconds": 14,
+  "completion_percentage": 100.0,
+  "passed_count": 2,
+  "failed_count": 1,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "Görsel Kontrol - Ön Panel",
+      "status": "passed",
+      "start_time": "30/01/2026 15:55:16",
+      "actual_duration": 4,
+      "result_value": "PASS",
+      "comment": "",
+      "time_limit": 5,
+      "completed_by": "Sistem Yöneticisi",
+      "input_validation": {}
+    },
+    {
+      "step_id": 2,
+      "name": "Ara Adım - Bilgilendirme",
+      "status": "passed",
+      "start_time": "30/01/2026 15:55:20",
+      "actual_duration": 5,
+      "result_value": null,
+      "comment": "",
+      "time_limit": 10,
+      "completed_by": "Fatma Öztürk",
+      "input_validation": {}
+    },
+    {
+      "step_id": 3,
+      "name": "Voltaj Ölçümü",
+      "status": "failed",
+      "start_time": "30/01/2026 15:55:26",
+      "actual_duration": 4,
+      "result_value": "5",
+      "comment": "",
+      "time_limit": 120,
+      "completed_by": "Fatma Öztürk",
+      "input_validation": {
+        "min": 11.5,
+        "max": 12.5
+      }
+    }
+  ],
+  "last_updated": "2026-01-30T15:55:52.126579",
+  "file_version": "1.0"
+}
+```
+
+# data\updates\GuncellemeRaporu_ST-01_20260202_ABC123.json
+
+```json
+{
+  "session_id": "20260202_161033",
+  "stock_number": "ABC123",
+  "serial_number": "456789",
+  "station_number": "ST-01",
+  "sip_code": "X99",
+  "start_time": "2026-02-02T16:10:33.163449",
   "end_time": null,
-  "duration_seconds": 0,
+  "duration_seconds": 61790,
   "completion_percentage": 0.0,
   "passed_count": 0,
   "failed_count": 0,
@@ -756,11 +874,12 @@ DEFAULT_ADMIN_PASSWORD = "admin123"  # Change this in production!
       "step_id": 1,
       "name": "Görsel Kontrol - Ön Panel",
       "status": "in_progress",
-      "start_time": "30/01/2026 11:07:13",
+      "start_time": "02/02/2026 16:10:33",
       "actual_duration": null,
       "result_value": null,
       "comment": null,
       "time_limit": 5,
+      "completed_by": null,
       "input_validation": {}
     },
     {
@@ -772,6 +891,7 @@ DEFAULT_ADMIN_PASSWORD = "admin123"  # Change this in production!
       "result_value": null,
       "comment": null,
       "time_limit": 10,
+      "completed_by": null,
       "input_validation": {}
     },
     {
@@ -783,14 +903,200 @@ DEFAULT_ADMIN_PASSWORD = "admin123"  # Change this in production!
       "result_value": null,
       "comment": null,
       "time_limit": 120,
+      "completed_by": null,
       "input_validation": {
         "min": 11.5,
         "max": 12.5
       }
     }
   ],
-  "last_updated": "2026-01-30T11:07:13.311102",
+  "last_updated": "2026-02-03T09:20:24.016919",
   "file_version": "1.0"
+}
+```
+
+# data\updates\GuncellemeRaporu_ST-01_20260203_ABC123.json
+
+```json
+{
+  "session_id": "20260203_085610",
+  "stock_number": "ABC123",
+  "serial_number": "456789",
+  "station_number": "ST-01",
+  "sip_code": "X99",
+  "start_time": "2026-02-03T08:56:10.658604",
+  "end_time": "2026-02-03T09:18:49.268874",
+  "duration_seconds": 1358,
+  "completion_percentage": 100.0,
+  "passed_count": 1,
+  "failed_count": 2,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "Görsel Kontrol - Ön Panel",
+      "status": "failed",
+      "start_time": "03/02/2026 08:56:10",
+      "actual_duration": 32,
+      "result_value": "FAIL",
+      "comment": "",
+      "time_limit": 5,
+      "completed_by": "Sistem Yöneticisi",
+      "input_validation": {}
+    },
+    {
+      "step_id": 2,
+      "name": "Ara Adım - Bilgilendirme",
+      "status": "passed",
+      "start_time": "03/02/2026 08:56:42",
+      "actual_duration": 5,
+      "result_value": null,
+      "comment": "",
+      "time_limit": 10,
+      "completed_by": "Sistem Yöneticisi",
+      "input_validation": {}
+    },
+    {
+      "step_id": 3,
+      "name": "Voltaj Ölçümü",
+      "status": "failed",
+      "start_time": "03/02/2026 08:56:48",
+      "actual_duration": 1320,
+      "result_value": "3",
+      "comment": "",
+      "time_limit": 120,
+      "completed_by": "Mehmet Demir",
+      "input_validation": {
+        "min": 11.5,
+        "max": 12.5
+      }
+    }
+  ],
+  "last_updated": "2026-02-03T09:18:49.268990",
+  "file_version": "1.0"
+}
+```
+
+# data\users.json
+
+```json
+{
+    "version": "1.0",
+    "description": "Kullanıcı tanımları - 3 Rol Tipi: Admin, Operator, Developer",
+    "users": {
+        "admins": [
+            {
+                "username": "admin",
+                "password_hash": "0192023a7bbd73250516f069df18b500",
+                "display_name": "Sistem Yöneticisi",
+                "employee_id": "ADM001",
+                "department": "IT",
+                "active": true
+            },
+            {
+                "username": "admin2",
+                "password_hash": "0192023a7bbd73250516f069df18b500",
+                "display_name": "Yedek Yönetici",
+                "employee_id": "ADM002",
+                "department": "IT",
+                "active": true
+            }
+        ],
+        "operators": [
+            {
+                "username": "op1",
+                "password_hash": "",
+                "display_name": "Ali Yılmaz",
+                "employee_id": "OP001",
+                "department": "Üretim Hattı A",
+                "active": true
+            },
+            {
+                "username": "op2",
+                "password_hash": "",
+                "display_name": "Ayşe Kaya",
+                "employee_id": "OP002",
+                "department": "Üretim Hattı A",
+                "active": true
+            },
+            {
+                "username": "op3",
+                "password_hash": "",
+                "display_name": "Mehmet Demir",
+                "employee_id": "OP003",
+                "department": "Üretim Hattı B",
+                "active": true
+            },
+            {
+                "username": "op4",
+                "password_hash": "",
+                "display_name": "Fatma Öztürk",
+                "employee_id": "OP004",
+                "department": "Üretim Hattı B",
+                "active": true
+            },
+            {
+                "username": "op5",
+                "password_hash": "",
+                "display_name": "Mustafa Çelik",
+                "employee_id": "OP005",
+                "department": "Üretim Hattı C",
+                "active": true
+            }
+        ],
+        "developers": [
+            {
+                "username": "dev1",
+                "password_hash": "e99a18c428cb38d5f260853678922e03",
+                "display_name": "Zeynep Aksoy (Dev)",
+                "employee_id": "DEV001",
+                "department": "Yazılım",
+                "active": true
+            },
+            {
+                "username": "dev2",
+                "password_hash": "e99a18c428cb38d5f260853678922e03",
+                "display_name": "Can Yıldırım (Dev)",
+                "employee_id": "DEV002",
+                "department": "Yazılım",
+                "active": true
+            }
+        ]
+    },
+    "roles": {
+        "admin": {
+            "display_name": "Yönetici",
+            "can_navigate_back": true,
+            "can_edit_results": true,
+            "can_export": true,
+            "can_manage_users": true,
+            "can_edit_test_steps": false,
+            "requires_password": true
+        },
+        "operator": {
+            "display_name": "Operatör",
+            "can_navigate_back": false,
+            "can_edit_results": false,
+            "can_export": true,
+            "can_manage_users": false,
+            "can_edit_test_steps": false,
+            "requires_password": true
+        },
+        "developer": {
+            "display_name": "Geliştirici",
+            "can_navigate_back": true,
+            "can_edit_results": true,
+            "can_export": true,
+            "can_manage_users": true,
+            "can_edit_test_steps": true,
+            "requires_password": true
+        }
+    },
+    "_passwords_for_testing": {
+        "admin": "admin123",
+        "admin2": "admin123",
+        "dev1": "abc123",
+        "dev2": "abc123"
+    }
 }
 ```
 
@@ -1096,6 +1402,22 @@ class ExcelExporter:
         # Keep only alphanumeric, hyphens, and underscores
         return ''.join(c if c.isalnum() or c in '-_' else '_' for c in name)
 ```
+
+# exporters\TestRaporu_ST-01_20260130_142719_ABC123.xlsx
+
+This is a binary file of the type: Excel Spreadsheet
+
+# exporters\TestRaporu_ST-01_20260130_142730_ABC123.xlsx
+
+This is a binary file of the type: Excel Spreadsheet
+
+# exporters\TestRaporu_ST-01_20260130_145028_ABC123.xlsx
+
+This is a binary file of the type: Excel Spreadsheet
+
+# exporters\TestRaporu_ST-01_20260130_154956_ABC123.xlsx
+
+This is a binary file of the type: Excel Spreadsheet
 
 # main.py
 
@@ -1428,7 +1750,8 @@ class ResultManager(QObject):
     result_saved = pyqtSignal(int, object, str)      # step_index, value, status
     result_changed = pyqtSignal(int, object, object)  # step_index, old, new
     
-    def __init__(self):
+    def __init__(self, auth_manager=None):
+        self.auth_manager = auth_manager
         super().__init__()
         logger.info("ResultManager initialized")
     
@@ -1465,7 +1788,7 @@ class ResultManager(QObject):
         step.result_value = final_value
         step.comment = comment
         step.actual_duration = actual_duration
-        
+        step.completed_by = self.auth_manager.get_display_name()
         # Determine status
         status = self._determine_status(step.input_type, is_valid)
         step.status = status
@@ -1585,11 +1908,11 @@ class TestManager(QObject):
     
     def __init__(self, auth_manager=None):
         super().__init__()
-        
+        self.auth_manager = auth_manager
         # Specialized managers
         self.timer_manager = TimerManager()
         self.navigation_manager = NavigationManager()
-        self.result_manager = ResultManager()
+        self.result_manager = ResultManager(auth_manager)
         
         # Connect manager signals
         self.timer_manager.timer_tick.connect(self._on_timer_tick)
@@ -1602,7 +1925,7 @@ class TestManager(QObject):
         
         # Continuous writer
         self.continuous_writer = ContinuousWriter()
-        self.auth_manager = auth_manager
+        
         logger.info("TestManager initialized (refactored)")
     
     # ════════════════════════════════════════════════════════
@@ -2331,9 +2654,11 @@ class TestSession:
 """
 TestStep Data Model
 Represents a single step in the test procedure
+UPDATED: Added completed_by and completed_at fields to track who/when completed the step
 """
 from typing import Optional, Dict, Any
 from datetime import datetime
+import time
 from models.enums import TestStatus, InputType
 import config
 
@@ -2354,8 +2679,10 @@ class TestStep:
         status: Current status of the step (TestStatus enum)
         result_value: User-entered result value
         actual_duration: Actual time taken to complete (seconds)
-        start_time: Unix timestamp when step started
-        comment: Optional comment from user
+        comment: Optional comment for the step
+        start_time: When the step was started (Unix timestamp)
+        completed_by: Display name of user who completed the step
+        completed_at: Timestamp when step was completed (overwrites on re-do)
     """
     
     def __init__(
@@ -2382,8 +2709,12 @@ class TestStep:
         self.status = TestStatus.NOT_STARTED
         self.result_value: Optional[Any] = None
         self.actual_duration: Optional[int] = None
-        self.start_time: Optional[float] = None  # Unix timestamp
+        self.start_time: Optional[float] = None
         self.comment: Optional[str] = None
+        
+        # User tracking (OVERWRITES on re-submission)
+        self.completed_by: Optional[str] = None   # e.g., "Ali Yılmaz", "Sistem Yöneticisi"
+        self.completed_at: Optional[float] = None  # Unix timestamp when completed
         
     @property
     def requires_input(self) -> bool:
@@ -2391,26 +2722,39 @@ class TestStep:
         return self.input_type != InputType.NONE
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
+        """
+        Convert to dictionary for JSON serialization.
+        
+        Output order is organized for readability:
+        1. Step definition (id, name, time_limit, validation)
+        2. Execution state (status, result, duration)
+        3. User tracking (completed_by, completed_at)
+        4. Comments
+        """
         return {
+            # Step definition
             'step_id': self.step_id,
             'name': self.name,
-            'description': self.description,
             'time_limit': self.time_limit,
-            'image_path': self.image_path,
-            'input_type': self.input_type.value,
-            'input_label': self.input_label,
             'input_validation': self.input_validation,
+            
+            # Execution state
             'status': self.status.value,
             'result_value': self.result_value,
             'actual_duration': self.actual_duration,
             'start_time': self._format_timestamp(self.start_time),
+            
+            # User tracking (OVERWRITES on re-submission)
+            'completed_by': self.completed_by,
+            'completed_at': self._format_timestamp(self.completed_at),
+            
+            # Comments
             'comment': self.comment
         }
     
     def _format_timestamp(self, timestamp: Optional[float]) -> Optional[str]:
         """
-        Format Unix timestamp to readable string.
+        Format Unix timestamp to human-readable string.
         
         Args:
             timestamp: Unix timestamp (seconds since epoch)
@@ -2450,6 +2794,10 @@ class TestStep:
             step.actual_duration = data['actual_duration']
         if 'comment' in data:
             step.comment = data['comment']
+        if 'completed_by' in data:
+            step.completed_by = data['completed_by']
+        if 'completed_at' in data:
+            step.completed_at = data['completed_at']
             
         return step
     
@@ -2628,7 +2976,9 @@ class ContinuousWriter:
                 'result_value': step_dict.get('result_value'),
                 'comment': step_dict.get('comment'),  # User comment
                 'time_limit': step_dict['time_limit'],
+                'completed_by': step_dict['completed_by'],
                 'input_validation': step_dict.get('input_validation')  # Min/max values
+                
             }
             formatted_steps.append(formatted_step)
         
@@ -2710,6 +3060,12 @@ class ContinuousWriter:
         filename = "_".join(parts) + ".json"
         
         return filename
+```
+
+# readme.txt
+
+```txt
+
 ```
 
 # requirements.txt
@@ -2877,13 +3233,18 @@ User interface components
 # ui\dialogs\__init__.py
 
 ```py
+# -*- coding: utf-8 -*-
+
 """
 Dialogs Package
 Dialog windows for the application
+
+Location: ui/dialogs/__init__.py
 """
 from ui.dialogs.update_settings_dialog import UpdateSettingsDialog
+from ui.dialogs.switch_user_dialog import SwitchUserDialog
 
-__all__ = ['UpdateSettingsDialog']
+__all__ = ['UpdateSettingsDialog', 'SwitchUserDialog']
 ```
 
 # ui\dialogs\login_dialog.py
@@ -2892,12 +3253,18 @@ __all__ = ['UpdateSettingsDialog']
 # -*- coding: utf-8 -*-
 
 """
-Login Dialog - EXTRA LARGE VERSION
-Simple admin authentication dialog with maximum visibility
-SIZE: 600x400 pixels (was 500x350)
+Login Dialog - 3 Role System
+Supports: Admin, Operator, Developer
+
+Features:
+- Dropdown to select operator (no password needed)
+- Password field for admin/developer login
+- Shows user's department and employee ID
+- Developer mode indicator
 """
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
-                             QLabel, QLineEdit, QMessageBox, QFrame)
+                             QLabel, QLineEdit, QMessageBox, QFrame, QComboBox,
+                             QGroupBox)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import config
@@ -2908,103 +3275,145 @@ logger = setup_logger(__name__)
 
 class LoginDialog(QDialog):
     """
-    Simple login dialog with two options:
-    1. Continue as Operator (no password)
-    2. Login as Admin (requires password)
+    3-Role login dialog:
     
-    EXTRA LARGE: 600x400 pixels for maximum visibility
+    1. Operator Selection (dropdown, no password)
+    2. Admin/Developer Login (username + password)
+    
+    Developer has all admin rights + can_edit_test_steps (future)
     """
     
     def __init__(self, auth_manager, parent=None):
+        """
+        Initialize the login dialog.
+        
+        Args:
+            auth_manager: AuthManager instance
+            parent: Parent widget
+        """
         super().__init__(parent)
         self.auth_manager = auth_manager
         self.user_authenticated = False
-        self._init_ui()
-    
-    def _init_ui(self):
-        """Initialize UI"""
-        self.setWindowTitle("Kullanıcı Girişi")
+        
+        self.setWindowTitle("Giriş Yap")
+        self.setFixedSize(950,720)
         self.setModal(True)
         
-        # EXTRA LARGE SIZE: 600x400 (was 500x350)
-        self.setFixedSize(900, 800)
+        self._init_ui()
         
-        # Set window flags to prevent closing without choice
-        self.setWindowFlags(
-            Qt.Dialog | 
-            Qt.WindowTitleHint | 
-            Qt.CustomizeWindowHint
-        )
-        
+        logger.debug("LoginDialog initialized (3-Role System)")
+    
+    def _init_ui(self):
+        """Initialize the UI components"""
         layout = QVBoxLayout()
-        layout.setSpacing(25)  # Increased spacing
-        layout.setContentsMargins(50, 50, 50, 50)  # Larger margins
+        layout.setSpacing(12)
+        layout.setContentsMargins(30, 20, 30, 20)
         
         # ====================================================================
-        # TITLE
+        # Header
         # ====================================================================
-        title = QLabel("Test Prosedürü Uygulaması")
-        title.setStyleSheet(f"""
-            font-size: {config.FONT_SIZE_LARGE + 10}pt;
+        header_label = QLabel("Test Prosedür Uygulaması")
+        header_label.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE_LARGE + 2}pt;
+            color: {config.Colors.TEXT_PRIMARY};
             font-weight: bold;
-            color: {config.Colors.ACCENT_BLUE};
-            padding: 15px;
+            padding-bottom: 5px;
         """)
-        title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
-        
-        # Subtitle
-        subtitle = QLabel("Lütfen kullanıcı tipini seçin")
-        subtitle.setStyleSheet(f"""
-            font-size: {config.FONT_SIZE + 4}pt;
-            color: {config.Colors.TEXT_SECONDARY};
-            padding-bottom: 15px;
-        """)
-        subtitle.setAlignment(Qt.AlignCenter)
-        layout.addWidget(subtitle)
+        header_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(header_label)
         
         # ====================================================================
-        # OPTION 1: Operator Button (LARGER)
+        # SECTION 1: Operator Selection (Dropdown - No Password)
         # ====================================================================
-        operator_btn = QPushButton("Operatör Olarak Devam Et")
-        operator_btn.setMinimumHeight(70)  # Increased from 60
+        operator_group = QGroupBox("👷 Operatör Girişi")
+        operator_group.setStyleSheet(f"""
+            QGroupBox {{
+                font-size: {config.FONT_SIZE + 1}pt;
+                font-weight: bold;
+                color: {config.Colors.TEXT_PRIMARY};
+                border: 2px solid {config.Colors.ACCENT_BLUE};
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 10px;
+            }}
+        """)
+        
+        operator_layout = QVBoxLayout()
+        operator_layout.setSpacing(8)
+        
+        # Operator dropdown
+        operator_label = QLabel("Operatör Seçin:")
+        operator_label.setStyleSheet(f"font-size: {config.FONT_SIZE}pt; color: {config.Colors.TEXT_PRIMARY};")
+        operator_layout.addWidget(operator_label)
+        
+        self.operator_combo = QComboBox()
+        self.operator_combo.setMinimumHeight(42)
+        self.operator_combo.setStyleSheet(f"""
+            QComboBox {{
+                padding: 8px;
+                font-size: {config.FONT_SIZE + 1}pt;
+                border: 2px solid {config.Colors.BORDER};
+                border-radius: 6px;
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+                color: {config.Colors.TEXT_PRIMARY};
+            }}
+            QComboBox:hover {{ border: 2px solid {config.Colors.ACCENT_BLUE}; }}
+            QComboBox::drop-down {{ border: none; width: 30px; }}
+            QComboBox QAbstractItemView {{
+                background-color: {config.Colors.BACKGROUND_SECONDARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                selection-background-color: {config.Colors.ACCENT_BLUE};
+            }}
+        """)
+        
+        self._populate_operators()
+        self.operator_combo.currentIndexChanged.connect(self._on_operator_changed)
+        operator_layout.addWidget(self.operator_combo)
+        
+        # Operator info display
+        self.operator_info_label = QLabel("")
+        self.operator_info_label.setStyleSheet(f"font-size: {config.FONT_SIZE - 1}pt; color: {config.Colors.TEXT_SECONDARY}; padding: 3px;")
+        operator_layout.addWidget(self.operator_info_label)
+        self._on_operator_changed(0)
+        
+        # Operator login button
+        operator_btn = QPushButton("Operatör Olarak Giriş Yap")
+        operator_btn.setMinimumHeight(50)
         operator_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {config.Colors.ACCENT_BLUE};
                 color: white;
-                padding: 20px;
-                font-size: {config.FONT_SIZE_BUTTON + 4}pt;
+                padding: 12px;
+                font-size: {config.FONT_SIZE_BUTTON + 1}pt;
                 font-weight: bold;
-                border-radius: 10px;
+                border-radius: 6px;
                 border: none;
             }}
-            QPushButton:hover {{
-                background-color: #1976d2;
-            }}
-            QPushButton:pressed {{
-                background-color: #1565c0;
-            }}
+            QPushButton:hover {{ background-color: {config.Colors.ACCENT_LIGHT}; }}
+            QPushButton:pressed {{ background-color: #1976d2; }}
         """)
         operator_btn.clicked.connect(self._login_as_operator)
-        layout.addWidget(operator_btn)
+        operator_layout.addWidget(operator_btn)
+        
+        operator_group.setLayout(operator_layout)
+        layout.addWidget(operator_group)
         
         # ====================================================================
-        # SEPARATOR (LARGER)
+        # Separator
         # ====================================================================
         separator_layout = QHBoxLayout()
-        
         line1 = QFrame()
         line1.setFrameShape(QFrame.HLine)
         line1.setFixedHeight(2)
         line1.setStyleSheet(f"background-color: {config.Colors.BORDER};")
         
-        separator_label = QLabel("veya")
-        separator_label.setAlignment(Qt.AlignCenter)
-        separator_label.setStyleSheet(f"""
-            color: {config.Colors.TEXT_SECONDARY};
-            font-size: {config.FONT_SIZE + 2}pt;
-            padding: 0 20px;
-        """)
+        separator_label = QLabel("VEYA")
+        separator_label.setStyleSheet(f"color: {config.Colors.TEXT_SECONDARY}; font-size: {config.FONT_SIZE}pt; padding: 0 15px;")
         
         line2 = QFrame()
         line2.setFrameShape(QFrame.HLine)
@@ -3014,141 +3423,657 @@ class LoginDialog(QDialog):
         separator_layout.addWidget(line1)
         separator_layout.addWidget(separator_label)
         separator_layout.addWidget(line2)
-        
         layout.addLayout(separator_layout)
         
         # ====================================================================
-        # OPTION 2: Admin Login (LARGER)
+        # SECTION 2: Admin/Developer Login (Username + Password)
         # ====================================================================
-        admin_label = QLabel("Yönetici Şifresi:")
-        admin_label.setStyleSheet(f"""
-            font-size: {config.FONT_SIZE + 4}pt;
-            color: {config.Colors.TEXT_PRIMARY};
-            font-weight: bold;
-            padding-top: 10px;
+        admin_group = QGroupBox("🔐 Yetkili Girişi (Admin / Geliştirici)")
+        admin_group.setStyleSheet(f"""
+            QGroupBox {{
+                font-size: {config.FONT_SIZE + 1}pt;
+                font-weight: bold;
+                color: {config.Colors.TEXT_PRIMARY};
+                border: 2px solid {config.Colors.WARNING};
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 10px;
+            }}
         """)
-        layout.addWidget(admin_label)
+        
+        admin_layout = QVBoxLayout()
+        admin_layout.setSpacing(6)
+        
+        # Username input
+        username_label = QLabel("Kullanıcı Adı:")
+        username_label.setStyleSheet(f"font-size: {config.FONT_SIZE}pt; color: {config.Colors.TEXT_PRIMARY};")
+        admin_layout.addWidget(username_label)
+        
+        self.username_input = QLineEdit()
+        self.username_input.setPlaceholderText("Kullanıcı adı girin...")
+        self.username_input.setMinimumHeight(38)
+        self.username_input.setStyleSheet(f"""
+            QLineEdit {{
+                padding: 8px;
+                font-size: {config.FONT_SIZE}pt;
+                border: 2px solid {config.Colors.BORDER};
+                border-radius: 6px;
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+                color: {config.Colors.TEXT_PRIMARY};
+            }}
+            QLineEdit:focus {{ border: 2px solid {config.Colors.WARNING}; }}
+        """)
+        admin_layout.addWidget(self.username_input)
+        
+        # Password input
+        password_label = QLabel("Şifre:")
+        password_label.setStyleSheet(f"font-size: {config.FONT_SIZE}pt; color: {config.Colors.TEXT_PRIMARY};")
+        admin_layout.addWidget(password_label)
         
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setPlaceholderText("Şifre girin...")
-        self.password_input.setMinimumHeight(55)  # Increased from 45
+        self.password_input.setMinimumHeight(38)
         self.password_input.setStyleSheet(f"""
             QLineEdit {{
-                padding: 15px;
-                font-size: {config.FONT_SIZE + 4}pt;
+                padding: 8px;
+                font-size: {config.FONT_SIZE}pt;
                 border: 2px solid {config.Colors.BORDER};
-                border-radius: 8px;
+                border-radius: 6px;
                 background-color: {config.Colors.BACKGROUND_TERTIARY};
                 color: {config.Colors.TEXT_PRIMARY};
             }}
-            QLineEdit:focus {{
-                border: 2px solid {config.Colors.ACCENT_BLUE};
-            }}
+            QLineEdit:focus {{ border: 2px solid {config.Colors.WARNING}; }}
         """)
         self.password_input.returnPressed.connect(self._login_as_admin)
-        layout.addWidget(self.password_input)
+        admin_layout.addWidget(self.password_input)
         
-        admin_btn = QPushButton("Yönetici Olarak Giriş Yap")
-        admin_btn.setMinimumHeight(70)  # Increased from 60
+        # Admin login button
+        admin_btn = QPushButton("Yetkili Olarak Giriş Yap")
+        admin_btn.setMinimumHeight(50)
         admin_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {config.Colors.WARNING};
                 color: white;
-                padding: 20px;
-                font-size: {config.FONT_SIZE_BUTTON + 4}pt;
+                padding: 12px;
+                font-size: {config.FONT_SIZE_BUTTON + 1}pt;
                 font-weight: bold;
-                border-radius: 10px;
+                border-radius: 6px;
                 border: none;
             }}
-            QPushButton:hover {{
-                background-color: #f57c00;
-            }}
-            QPushButton:pressed {{
-                background-color: #e65100;
-            }}
+            QPushButton:hover {{ background-color: #f57c00; }}
+            QPushButton:pressed {{ background-color: #e65100; }}
         """)
         admin_btn.clicked.connect(self._login_as_admin)
-        layout.addWidget(admin_btn)
+        admin_layout.addWidget(admin_btn)
+        
+        admin_group.setLayout(admin_layout)
+        layout.addWidget(admin_group)
         
         layout.addStretch()
         
         self.setLayout(layout)
         
         # Set dark background
-        self.setStyleSheet(f"""
-            QDialog {{
-                background-color: {config.Colors.BACKGROUND_PRIMARY};
-            }}
-        """)
+        self.setStyleSheet(f"QDialog {{ background-color: {config.Colors.BACKGROUND_PRIMARY}; }}")
+    
+    def _populate_operators(self):
+        """Populate the operator dropdown with users from auth_manager."""
+        self.operator_combo.clear()
         
-        logger.debug("LoginDialog initialized (EXTRA LARGE: 600x400)")
+        operators = self.auth_manager.get_operators() if hasattr(self.auth_manager, 'get_operators') else []
+        
+        if operators:
+            for op in operators:
+                display_text = op.get('display_name', op.get('username', 'Operatör'))
+                self.operator_combo.addItem(display_text, op)
+        else:
+            self.operator_combo.addItem("Operatör", {
+                'username': 'operator',
+                'display_name': 'Operatör',
+                'role': 'operator',
+                'department': '',
+                'employee_id': ''
+            })
+        
+        logger.debug(f"Populated {self.operator_combo.count()} operators")
+    
+    def _on_operator_changed(self, index):
+        """Update operator info display when selection changes."""
+        if index < 0:
+            return
+            
+        user_data = self.operator_combo.itemData(index)
+        if user_data:
+            dept = user_data.get('department', '')
+            emp_id = user_data.get('employee_id', '')
+            
+            info_parts = []
+            if emp_id:
+                info_parts.append(f"Sicil: {emp_id}")
+            if dept:
+                info_parts.append(f"Departman: {dept}")
+            
+            self.operator_info_label.setText(" | ".join(info_parts) if info_parts else "")
     
     def _login_as_operator(self):
-        """Login as operator (no password needed)"""
-        self.auth_manager.authenticate_as_operator()
-        self.user_authenticated = True
-        logger.info("User logged in as operator")
-        self.accept()
+        """Login as selected operator."""
+        user_data = self.operator_combo.currentData()
+        
+        if user_data:
+            username = user_data.get('username', 'operator')
+            self.auth_manager.login_as_operator(username)
+            self.user_authenticated = True
+            logger.info(f"User logged in as operator: {user_data.get('display_name')}")
+            self.accept()
     
     def _login_as_admin(self):
-        """Login as admin (requires password)"""
+        """Login as admin or developer with username and password."""
+        username = self.username_input.text().strip()
         password = self.password_input.text()
         
+        if not username:
+            QMessageBox.warning(self, "Uyarı", "Lütfen kullanıcı adı girin!", QMessageBox.Ok)
+            self.username_input.setFocus()
+            return
+        
         if not password:
-            QMessageBox.warning(
-                self, 
-                "Uyarı", 
-                "Lütfen şifre girin!",
-                QMessageBox.Ok
-            )
+            QMessageBox.warning(self, "Uyarı", "Lütfen şifre girin!", QMessageBox.Ok)
             self.password_input.setFocus()
             return
         
-        if self.auth_manager.authenticate(password):
+        if self.auth_manager.authenticate(username, password):
             self.user_authenticated = True
-            logger.info("User logged in as admin")
             
-            # Show success message
+            role = self.auth_manager.get_role()
+            display_name = self.auth_manager.get_display_name()
+            
+            # Role-specific messages
+            if role == 'developer':
+                permissions = (
+                    "✓ Tüm yönetici yetkileri\n"
+                    "✓ Geri gitme özelliği aktif\n"
+                    "✓ Test adımları düzenleme (yakında)"
+                )
+                title_suffix = "GELİŞTİRİCİ MODU"
+            elif role == 'admin':
+                permissions = (
+                    "✓ Geri gitme özelliği aktif\n"
+                    "✓ Sonuç düzenleme yetkisi\n"
+                    "✓ Raporlama yetkisi"
+                )
+                title_suffix = "YÖNETİCİ MODU"
+            else:
+                permissions = "Standart yetkiler"
+                title_suffix = ""
+            
             QMessageBox.information(
                 self,
-                "Başarılı",
-                "Yönetici girişi başarılı!\n\n"
-                "✓ Geri gitme özelliği aktif\n"
-                "✓ Tamamlanan adımlara tıklayarak gidebilirsiniz",
+                "Giriş Başarılı",
+                f"Hoş geldiniz, {display_name}!\n\n{permissions}",
                 QMessageBox.Ok
             )
             
+            logger.info(f"User logged in: {display_name} ({role})")
             self.accept()
         else:
-            # Show error message
             QMessageBox.critical(
                 self,
-                "Hata",
-                "Hatalı şifre!\n\nLütfen tekrar deneyin.",
+                "Giriş Hatası",
+                "Kullanıcı adı veya şifre hatalı!\n\nLütfen tekrar deneyin.",
                 QMessageBox.Ok
             )
             self.password_input.clear()
             self.password_input.setFocus()
+```
+
+# ui\dialogs\switch_user_dialog.py
+
+```py
+# -*- coding: utf-8 -*-
+
+"""
+Switch User Dialog - 3 Role System
+Allows switching between Operator, Admin, and Developer roles during test execution.
+
+Use case: 
+- Operator is running a test and needs to go to a previous step
+- Admin/Developer comes over, enters password to switch mode
+- Navigate back to the needed step
+- Switch back to operator mode when done
+
+Roles:
+- Operator: No password, basic test execution
+- Admin: Password required, can navigate back
+- Developer: Password required, all admin rights + edit test steps (future)
+
+Location: ui/dialogs/switch_user_dialog.py
+"""
+from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
+                             QLabel, QLineEdit, QMessageBox, QFrame, QComboBox,
+                             QGroupBox)
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QFont
+import config
+from utils.logger import setup_logger
+
+logger = setup_logger(__name__)
+
+
+class SwitchUserDialog(QDialog):
+    """
+    Dialog for switching user roles during test execution.
     
-    def closeEvent(self, event):
-        """Prevent closing without authentication"""
-        if not self.user_authenticated:
-            reply = QMessageBox.question(
+    3 Role System:
+    - Operator: Select from dropdown (no password)
+    - Admin/Developer: Username + password required
+    
+    Signals:
+        user_switched(str): Emitted when user role changes, sends new role
+    """
+    
+    # Signal emitted when user successfully switches role
+    user_switched = pyqtSignal(str)  # Emits new role
+    
+    def __init__(self, auth_manager, parent=None):
+        """
+        Initialize the switch user dialog.
+        
+        Args:
+            auth_manager: AuthManager instance for authentication
+            parent: Parent widget (usually MainWindow)
+        """
+        super().__init__(parent)
+        self.auth_manager = auth_manager
+        self.setWindowTitle("Kullanıcı Değiştir")
+        self.setFixedSize(950, 780)
+        self.setModal(True)
+        self._init_ui()
+        
+        logger.debug("SwitchUserDialog initialized (3-Role System)")
+    
+    def _init_ui(self):
+        """Initialize the UI components"""
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(25, 20, 25, 20)
+        
+        # ====================================================================
+        # Current User Info
+        # ====================================================================
+        current_role = self.auth_manager.get_role()
+        current_name = self.auth_manager.get_display_name()
+        
+        # Determine role display
+        if current_role == 'developer':
+            role_text = "Geliştirici"
+            role_color = config.Colors.SUCCESS
+        elif current_role == 'admin':
+            role_text = "Yönetici"
+            role_color = config.Colors.WARNING
+        else:
+            role_text = "Operatör"
+            role_color = config.Colors.ACCENT_BLUE
+        
+        is_privileged = current_role in ['admin', 'developer']
+        
+        # Header
+        header_label = QLabel("Kullanıcı Değiştir")
+        header_label.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE_LARGE}pt;
+            color: {config.Colors.TEXT_PRIMARY};
+            font-weight: bold;
+        """)
+        header_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(header_label)
+        
+        # Current user box
+        current_user_label = QLabel(f"Mevcut: {current_name} ({role_text})")
+        current_user_label.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE + 1}pt;
+            color: {config.Colors.TEXT_PRIMARY};
+            padding: 10px;
+            background-color: {config.Colors.BACKGROUND_TERTIARY};
+            border-radius: 5px;
+            border-left: 4px solid {role_color};
+        """)
+        current_user_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(current_user_label)
+        
+        layout.addSpacing(8)
+        
+        # ====================================================================
+        # OPTION 1: Switch to Operator (show if currently admin/developer)
+        # ====================================================================
+        if is_privileged:
+            operator_group = QGroupBox("👷 Operatör Moduna Geç")
+            operator_group.setStyleSheet(f"""
+                QGroupBox {{
+                    font-size: {config.FONT_SIZE + 1}pt;
+                    font-weight: bold;
+                    color: {config.Colors.TEXT_PRIMARY};
+                    border: 2px solid {config.Colors.ACCENT_BLUE};
+                    border-radius: 8px;
+                    margin-top: 8px;
+                    padding-top: 8px;
+                }}
+                QGroupBox::title {{
+                    subcontrol-origin: margin;
+                    left: 15px;
+                    padding: 0 8px;
+                }}
+            """)
+            
+            operator_layout = QVBoxLayout()
+            operator_layout.setSpacing(8)
+            
+            # Operator dropdown
+            op_label = QLabel("Operatör Seçin:")
+            op_label.setStyleSheet(f"font-size: {config.FONT_SIZE}pt; color: {config.Colors.TEXT_PRIMARY};")
+            operator_layout.addWidget(op_label)
+            
+            self.operator_combo = QComboBox()
+            self.operator_combo.setMinimumHeight(40)
+            self.operator_combo.setStyleSheet(f"""
+                QComboBox {{
+                    padding: 8px;
+                    font-size: {config.FONT_SIZE}pt;
+                    border: 2px solid {config.Colors.BORDER};
+                    border-radius: 6px;
+                    background-color: {config.Colors.BACKGROUND_TERTIARY};
+                    color: {config.Colors.TEXT_PRIMARY};
+                }}
+                QComboBox:hover {{ border: 2px solid {config.Colors.ACCENT_BLUE}; }}
+                QComboBox QAbstractItemView {{
+                    background-color: {config.Colors.BACKGROUND_SECONDARY};
+                    color: {config.Colors.TEXT_PRIMARY};
+                    selection-background-color: {config.Colors.ACCENT_BLUE};
+                }}
+            """)
+            self._populate_operators()
+            operator_layout.addWidget(self.operator_combo)
+            
+            # Switch to operator button
+            operator_btn = QPushButton("Operatör Olarak Devam Et")
+            operator_btn.setMinimumHeight(45)
+            operator_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {config.Colors.ACCENT_BLUE};
+                    color: white;
+                    padding: 10px;
+                    font-size: {config.FONT_SIZE_BUTTON}pt;
+                    font-weight: bold;
+                    border-radius: 6px;
+                    border: none;
+                }}
+                QPushButton:hover {{ background-color: {config.Colors.ACCENT_LIGHT}; }}
+                QPushButton:pressed {{ background-color: #1976d2; }}
+            """)
+            operator_btn.clicked.connect(self._switch_to_operator)
+            operator_layout.addWidget(operator_btn)
+            
+            # Info text
+            info_label = QLabel("⚠ Operatör modunda geri gitme özelliği devre dışıdır")
+            info_label.setStyleSheet(f"font-size: {config.FONT_SIZE - 1}pt; color: {config.Colors.TEXT_SECONDARY};")
+            info_label.setAlignment(Qt.AlignCenter)
+            operator_layout.addWidget(info_label)
+            
+            operator_group.setLayout(operator_layout)
+            layout.addWidget(operator_group)
+        
+        # ====================================================================
+        # Separator
+        # ====================================================================
+        separator_layout = QHBoxLayout()
+        line1 = QFrame()
+        line1.setFrameShape(QFrame.HLine)
+        line1.setFixedHeight(2)
+        line1.setStyleSheet(f"background-color: {config.Colors.BORDER};")
+        
+        separator_label = QLabel("VEYA")
+        separator_label.setStyleSheet(f"color: {config.Colors.TEXT_SECONDARY}; font-size: {config.FONT_SIZE}pt; padding: 0 15px;")
+        
+        line2 = QFrame()
+        line2.setFrameShape(QFrame.HLine)
+        line2.setFixedHeight(2)
+        line2.setStyleSheet(f"background-color: {config.Colors.BORDER};")
+        
+        separator_layout.addWidget(line1)
+        separator_layout.addWidget(separator_label)
+        separator_layout.addWidget(line2)
+        layout.addLayout(separator_layout)
+        
+        # ====================================================================
+        # OPTION 2: Switch to Admin/Developer (always show)
+        # ====================================================================
+        admin_group = QGroupBox("🔐 Yetkili Girişi (Admin / Geliştirici)")
+        admin_group.setStyleSheet(f"""
+            QGroupBox {{
+                font-size: {config.FONT_SIZE + 1}pt;
+                font-weight: bold;
+                color: {config.Colors.TEXT_PRIMARY};
+                border: 2px solid {config.Colors.WARNING};
+                border-radius: 8px;
+                margin-top: 8px;
+                padding-top: 8px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 8px;
+            }}
+        """)
+        
+        admin_layout = QVBoxLayout()
+        admin_layout.setSpacing(6)
+        
+        # Username input
+        username_label = QLabel("Kullanıcı Adı:")
+        username_label.setStyleSheet(f"font-size: {config.FONT_SIZE}pt; color: {config.Colors.TEXT_PRIMARY};")
+        admin_layout.addWidget(username_label)
+        
+        self.username_input = QLineEdit()
+        self.username_input.setPlaceholderText("Kullanıcı adı girin...")
+        self.username_input.setMinimumHeight(38)
+        self.username_input.setStyleSheet(f"""
+            QLineEdit {{
+                padding: 8px;
+                font-size: {config.FONT_SIZE}pt;
+                border: 2px solid {config.Colors.BORDER};
+                border-radius: 6px;
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+                color: {config.Colors.TEXT_PRIMARY};
+            }}
+            QLineEdit:focus {{ border: 2px solid {config.Colors.WARNING}; }}
+        """)
+        admin_layout.addWidget(self.username_input)
+        
+        # Password input
+        password_label = QLabel("Şifre:")
+        password_label.setStyleSheet(f"font-size: {config.FONT_SIZE}pt; color: {config.Colors.TEXT_PRIMARY};")
+        admin_layout.addWidget(password_label)
+        
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input.setPlaceholderText("Şifre girin...")
+        self.password_input.setMinimumHeight(38)
+        self.password_input.setStyleSheet(f"""
+            QLineEdit {{
+                padding: 8px;
+                font-size: {config.FONT_SIZE}pt;
+                border: 2px solid {config.Colors.BORDER};
+                border-radius: 6px;
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+                color: {config.Colors.TEXT_PRIMARY};
+            }}
+            QLineEdit:focus {{ border: 2px solid {config.Colors.WARNING}; }}
+        """)
+        self.password_input.returnPressed.connect(self._switch_to_admin)
+        admin_layout.addWidget(self.password_input)
+        
+        # Admin login button
+        admin_btn = QPushButton("Yetkili Olarak Giriş Yap")
+        admin_btn.setMinimumHeight(45)
+        admin_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {config.Colors.WARNING};
+                color: white;
+                padding: 10px;
+                font-size: {config.FONT_SIZE_BUTTON}pt;
+                font-weight: bold;
+                border-radius: 6px;
+                border: none;
+            }}
+            QPushButton:hover {{ background-color: #f57c00; }}
+            QPushButton:pressed {{ background-color: #e65100; }}
+        """)
+        admin_btn.clicked.connect(self._switch_to_admin)
+        admin_layout.addWidget(admin_btn)
+        
+        # Info text
+        info_label = QLabel("✓ Yetkili modunda önceki adımlara geri dönebilirsiniz")
+        info_label.setStyleSheet(f"font-size: {config.FONT_SIZE - 1}pt; color: {config.Colors.TEXT_SECONDARY};")
+        info_label.setAlignment(Qt.AlignCenter)
+        admin_layout.addWidget(info_label)
+        
+        admin_group.setLayout(admin_layout)
+        layout.addWidget(admin_group)
+        
+        # ====================================================================
+        # Cancel Button
+        # ====================================================================
+        layout.addStretch()
+        
+        cancel_btn = QPushButton("İptal")
+        cancel_btn.setMinimumHeight(38)
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                padding: 8px;
+                font-size: {config.FONT_SIZE}pt;
+                border-radius: 5px;
+                border: 1px solid {config.Colors.BORDER};
+            }}
+            QPushButton:hover {{ background-color: {config.Colors.BACKGROUND_SECONDARY}; }}
+        """)
+        cancel_btn.clicked.connect(self.reject)
+        layout.addWidget(cancel_btn)
+        
+        self.setLayout(layout)
+        
+        # Set dark background
+        self.setStyleSheet(f"QDialog {{ background-color: {config.Colors.BACKGROUND_PRIMARY}; }}")
+        
+        # Focus appropriate input
+        if not is_privileged:
+            self.username_input.setFocus()
+    
+    def _populate_operators(self):
+        """Populate the operator dropdown with users from auth_manager."""
+        if not hasattr(self, 'operator_combo'):
+            return
+            
+        self.operator_combo.clear()
+        
+        operators = self.auth_manager.get_operators() if hasattr(self.auth_manager, 'get_operators') else []
+        
+        if operators:
+            for op in operators:
+                display_text = op.get('display_name', op.get('username', 'Operatör'))
+                dept = op.get('department', '')
+                if dept:
+                    display_text += f" ({dept})"
+                self.operator_combo.addItem(display_text, op)
+        else:
+            self.operator_combo.addItem("Operatör", {
+                'username': 'operator',
+                'display_name': 'Operatör',
+                'role': 'operator'
+            })
+    
+    def _switch_to_operator(self):
+        """Switch to selected operator (no password needed)"""
+        user_data = self.operator_combo.currentData()
+        
+        if user_data:
+            username = user_data.get('username', 'operator')
+            self.auth_manager.login_as_operator(username)
+            
+            display_name = user_data.get('display_name', 'Operatör')
+            logger.info(f"User switched to operator: {display_name}")
+            
+            QMessageBox.information(
                 self,
-                "Çıkış",
-                "Giriş yapmadan çıkmak istiyor musunuz?\n\n"
-                "Uygulama kapatılacak.",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
+                "Başarılı",
+                f"Operatör moduna geçildi: {display_name}\n\n"
+                "✗ Geri gitme özelliği devre dışı\n"
+                "✓ Sadece ileri gidilebilir",
+                QMessageBox.Ok
             )
             
-            if reply == QMessageBox.Yes:
-                event.accept()
+            self.user_switched.emit('operator')
+            self.accept()
+    
+    def _switch_to_admin(self):
+        """Switch to admin or developer role (requires password)"""
+        username = self.username_input.text().strip()
+        password = self.password_input.text()
+        
+        if not username:
+            QMessageBox.warning(self, "Uyarı", "Lütfen kullanıcı adı girin!", QMessageBox.Ok)
+            self.username_input.setFocus()
+            return
+        
+        if not password:
+            QMessageBox.warning(self, "Uyarı", "Lütfen şifre girin!", QMessageBox.Ok)
+            self.password_input.setFocus()
+            return
+        
+        if self.auth_manager.authenticate(username, password):
+            role = self.auth_manager.get_role()
+            display_name = self.auth_manager.get_display_name()
+            
+            logger.info(f"User switched to {role}: {display_name}")
+            
+            # Role-specific message
+            if role == 'developer':
+                permissions = (
+                    "✓ Tüm yönetici yetkileri\n"
+                    "✓ Geri gitme özelliği aktif\n"
+                    "✓ Test adımları düzenleme (yakında)"
+                )
+                mode_text = "GELİŞTİRİCİ"
             else:
-                event.ignore()
+                permissions = (
+                    "✓ Geri gitme özelliği aktif\n"
+                    "✓ Tamamlanan adımlara tıklayarak gidebilirsiniz"
+                )
+                mode_text = "YÖNETİCİ"
+            
+            QMessageBox.information(
+                self,
+                "Başarılı",
+                f"{mode_text} moduna geçildi!\n\n{permissions}",
+                QMessageBox.Ok
+            )
+            
+            self.user_switched.emit(role)
+            self.accept()
         else:
-            event.accept()
+            QMessageBox.critical(
+                self,
+                "Hata",
+                "Kullanıcı adı veya şifre hatalı!\n\nLütfen tekrar deneyin.",
+                QMessageBox.Ok
+            )
+            self.password_input.clear()
+            self.password_input.setFocus()
 ```
 
 # ui\dialogs\update_settings_dialog.py
@@ -3409,6 +4334,7 @@ class UpdateSettingsDialog(QDialog):
 """
 Main Window
 Main application window with menu bar, sidebar, continuous data writing, and Excel export
+UPDATED: Added user switching feature (Kullanıcı menu)
 """
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, 
                              QFileDialog, QMenuBar, QMenu, QAction, QStatusBar, QPushButton)
@@ -3417,7 +4343,7 @@ from PyQt5.QtGui import QFont
 import os
 
 from ui.widgets import HeaderWidget, TitleWidget, ContentWidget, StatusBarWidget, ProgressNavigator
-from ui.dialogs import UpdateSettingsDialog
+from ui.dialogs import UpdateSettingsDialog, SwitchUserDialog
 from managers import TestManager
 from models.enums import InputType, TimerStatus
 from persistence import ContinuousWriter
@@ -3432,7 +4358,7 @@ class MainWindow(QMainWindow):
     Main application window with menu bar, sidebar, continuous data writing, and Excel export.
     
     Layout:
-    - Menu Bar: File and View menus
+    - Menu Bar: File, View, and User menus
     - Row 1: Header (test info + timestamp)
     - Row 2: Step title
     - Row 3: Content (image + description + input + export button)
@@ -3453,7 +4379,10 @@ class MainWindow(QMainWindow):
         self._create_status_bar()
         self._connect_signals()
         
-        # ADD THIS BLOCK AT THE END (after everything else) ↓
+        # Update user display in menu after menu is created
+        if self.auth_manager:
+            self._update_user_display()
+        
         # Enable sidebar clicking if admin
         if self.auth_manager and self.auth_manager.is_admin():
             if hasattr(self, 'sidebar') and self.sidebar is not None:
@@ -3521,7 +4450,7 @@ class MainWindow(QMainWindow):
         logger.debug("UI layout created with sidebar support")
     
     def _create_menu_bar(self):
-        """Create menu bar with File and View menus"""
+        """Create menu bar with File, View, and User menus"""
         menubar = self.menuBar()
         menubar.setStyleSheet(f"""
             QMenuBar {{
@@ -3540,9 +4469,14 @@ class MainWindow(QMainWindow):
             QMenu::item:selected {{
                 background-color: {config.Colors.ACCENT_BLUE};
             }}
+            QMenu::item:disabled {{
+                color: {config.Colors.TEXT_SECONDARY};
+            }}
         """)
         
+        # ====================================================================
         # File menu
+        # ====================================================================
         file_menu = menubar.addMenu(config.Labels.MENU_FILE)
         
         # Update settings action
@@ -3557,7 +4491,9 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
+        # ====================================================================
         # View menu
+        # ====================================================================
         view_menu = menubar.addMenu(config.Labels.MENU_VIEW)
         
         # Toggle sidebar action
@@ -3568,7 +4504,25 @@ class MainWindow(QMainWindow):
         self.toggle_sidebar_action.triggered.connect(self.toggle_sidebar)
         view_menu.addAction(self.toggle_sidebar_action)
         
-        logger.debug("Menu bar created with View menu")
+        # ====================================================================
+        # User menu (NEW)
+        # ====================================================================
+        self.user_menu = menubar.addMenu("Kullanıcı")
+        
+        # Current user display (disabled, just for info)
+        self.current_user_action = QAction("", self)
+        self.current_user_action.setEnabled(False)
+        self.user_menu.addAction(self.current_user_action)
+        
+        self.user_menu.addSeparator()
+        
+        # Switch user action
+        self.switch_user_action = QAction("Kullanıcı Değiştir...", self)
+        self.switch_user_action.setShortcut("Ctrl+U")
+        self.switch_user_action.triggered.connect(self._on_switch_user)
+        self.user_menu.addAction(self.switch_user_action)
+        
+        logger.debug("Menu bar created with File, View, and User menus")
     
     def _create_status_bar(self):
         """Create status bar to show continuous writer status"""
@@ -3587,6 +4541,95 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(f"Güncelleme klasörü: {current_folder}")
         
         logger.debug("Status bar created")
+    
+    # ========================================================================
+    # User Switching Methods (NEW)
+    # ========================================================================
+    
+    def _update_user_display(self):
+        """
+        Update the current user display in menu and window title.
+        
+        Called when:
+        - Application starts
+        - User switches role
+        """
+        if not self.auth_manager:
+            return
+        
+        role = self.auth_manager.get_role()
+        display_name = self.auth_manager.get_display_name()
+        
+        # Update menu item text
+        if role == config.UserRole.ADMIN:
+            role_text = "Yönetici"
+            self.current_user_action.setText(f"👤 {display_name} ({role_text})")
+            self.setWindowTitle(f"{config.WINDOW_TITLE} - YÖNETİCİ MODU")
+        else:
+            role_text = "Operatör"
+            self.current_user_action.setText(f"👤 {display_name} ({role_text})")
+            self.setWindowTitle(config.WINDOW_TITLE)
+        
+        logger.debug(f"User display updated: {display_name} ({role_text})")
+    
+    def _on_switch_user(self):
+        """
+        Open switch user dialog.
+        
+        Triggered by:
+        - Menu: Kullanıcı → Kullanıcı Değiştir...
+        - Shortcut: Ctrl+U
+        """
+        if not self.auth_manager:
+            logger.warning("No auth manager available for user switching")
+            QMessageBox.warning(
+                self,
+                "Uyarı",
+                "Kullanıcı yönetimi aktif değil.",
+                QMessageBox.Ok
+            )
+            return
+        
+        dialog = SwitchUserDialog(self.auth_manager, self)
+        dialog.user_switched.connect(self._on_user_switched)
+        dialog.exec_()
+    
+    def _on_user_switched(self, new_role: str):
+        """
+        Handle user role change.
+        
+        Updates:
+        - Menu display
+        - Window title
+        - Sidebar clickable state
+        - Status bar message
+        
+        Args:
+            new_role: The new user role (config.UserRole.ADMIN or OPERATOR)
+        """
+        logger.info(f"User role changed to: {new_role}")
+        
+        # Update user display in menu and title
+        self._update_user_display()
+        
+        # Update sidebar clickable state based on new role
+        if hasattr(self, 'sidebar') and self.sidebar is not None:
+            is_admin = self.auth_manager.is_admin()
+            self.sidebar.set_clickable(is_admin)
+            
+            if is_admin:
+                logger.info("✓ Sidebar navigation enabled (admin mode)")
+            else:
+                logger.info("✗ Sidebar navigation disabled (operator mode)")
+        
+        # Show status bar message
+        if hasattr(self, 'status_bar') and self.status_bar:
+            role_text = "Yönetici" if new_role == config.UserRole.ADMIN else "Operatör"
+            self.status_bar.showMessage(f"Kullanıcı değiştirildi: {role_text}", 5000)
+    
+    # ========================================================================
+    # Existing Methods
+    # ========================================================================
     
     def toggle_sidebar(self):
         """Toggle sidebar visibility"""
@@ -3620,6 +4663,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'sidebar') and self.sidebar:
             self.sidebar.step_clicked.connect(self._on_sidebar_step_clicked)
             logger.debug("Sidebar step_clicked signal connected")
+    
     def _on_open_update_settings(self):
         """Open update settings dialog"""
         dialog = UpdateSettingsDialog(
@@ -3628,6 +4672,7 @@ class MainWindow(QMainWindow):
         )
         dialog.settings_changed.connect(self._on_settings_changed)
         dialog.exec_()
+    
     def _on_sidebar_step_clicked(self, step_index: int):
         """
         Handle sidebar step click (backward navigation for admin).
@@ -3638,6 +4683,7 @@ class MainWindow(QMainWindow):
         from models.enums import NavigationMode
         logger.info(f"Sidebar step clicked: navigating to step {step_index}")
         self.test_manager.navigate_to_step(step_index, NavigationMode.VIEW_ONLY)
+    
     def _on_settings_changed(self):
         """Handle settings changed - update the continuous writer"""
         # Reload folder from settings
@@ -3675,7 +4721,7 @@ class MainWindow(QMainWindow):
             if self.sidebar:
                 self.sidebar.set_steps(self.test_manager.steps)
             
-            # >>> NEW: Update export button with session <<<
+            # Update export button with session
             if hasattr(self.test_manager, 'session') and self.test_manager.session:
                 self.content_widget.set_session(self.test_manager.session)
                 logger.debug("Export button enabled with loaded session")
@@ -3703,7 +4749,7 @@ class MainWindow(QMainWindow):
         
         success = self.test_manager.start_test()
         if success:
-            # >>> NEW: Update export button with started session <<<
+            # Update export button with started session
             if hasattr(self.test_manager, 'session') and self.test_manager.session:
                 self.content_widget.set_session(self.test_manager.session)
                 logger.debug("Export button updated after test start")
@@ -3743,7 +4789,7 @@ class MainWindow(QMainWindow):
             input_validation=current_step.input_validation
         )
         
-        # >>> NEW: Update export button with latest session state <<<
+        # Update export button with latest session state
         if hasattr(self.test_manager, 'session') and self.test_manager.session:
             self.content_widget.set_session(self.test_manager.session)
         
@@ -3841,12 +4887,12 @@ class MainWindow(QMainWindow):
         """Handle test completion"""
         self.status_bar.showMessage("Test tamamlandı!")
         
-        # >>> NEW: Final update to export button with completed session <<<
+        # Final update to export button with completed session
         if hasattr(self.test_manager, 'session') and self.test_manager.session:
             self.content_widget.set_session(self.test_manager.session)
             logger.debug("Export button updated with completed session")
         
-        # >>> OPTIONAL: Prompt for export <<<
+        # Prompt for export
         result = QMessageBox.question(
             self,
             "Tamamlandı",
@@ -6087,122 +7133,602 @@ __all__ = ['setup_logger']
 
 """
 Authentication Manager
-Simple role-based authentication system
+3-Role System: Admin, Operator, Developer
+
+Features:
+- Load users from data/users.json (organized by role folders)
+- Admin: Can navigate back, edit results, export
+- Operator: Basic test execution only (no password)
+- Developer: All admin rights + can edit test steps (future)
 """
 import hashlib
-from typing import Optional, Dict
+import json
+import os
+from typing import Optional, Dict, List, Any
+from pathlib import Path
 from utils.logger import setup_logger
 import config
 
 logger = setup_logger(__name__)
 
 
+class UserRole:
+    """
+    3 User role types with different permission levels.
+    
+    Hierarchy:
+    1. DEVELOPER - All admin rights + can edit test steps (future)
+    2. ADMIN - Can navigate back, edit results, manage users
+    3. OPERATOR - Basic test execution only
+    """
+    ADMIN = "admin"
+    OPERATOR = "operator"
+    DEVELOPER = "developer"
+    
+    # Display names (Turkish)
+    DISPLAY_NAMES = {
+        ADMIN: "Yönetici",
+        OPERATOR: "Operatör",
+        DEVELOPER: "Geliştirici"
+    }
+    
+    # Roles that can navigate backward
+    BACKWARD_NAV_ROLES = [ADMIN, DEVELOPER]
+    
+    # Roles that can edit submitted results
+    EDIT_ROLES = [ADMIN, DEVELOPER]
+    
+    # Roles that can export reports
+    EXPORT_ROLES = [ADMIN, DEVELOPER]
+    
+    # Roles that can edit test steps (future feature)
+    EDIT_STEPS_ROLES = [DEVELOPER]
+    
+    # Roles that require password
+    PASSWORD_REQUIRED_ROLES = [ADMIN, DEVELOPER]
+
+
 class AuthManager:
     """
-    Simple authentication manager.
+    3-Role Authentication Manager.
     
-    Current: Single admin password
-    Future: Multiple users from JSON file
+    Roles:
+    - ADMIN: Can navigate back, edit results, export reports
+    - OPERATOR: Basic test execution only (no password required)
+    - DEVELOPER: All admin rights + can edit test steps (future)
+    
+    Users are organized in folders/lists in users.json:
+    - users.admins[]
+    - users.operators[]
+    - users.developers[]
+    
+    Usage:
+        auth = AuthManager()
+        
+        # Operator login (no password)
+        auth.login_as_operator("op1")
+        
+        # Admin/Developer login (with password)
+        if auth.authenticate("admin", "admin123"):
+            print(f"Welcome {auth.get_display_name()}")
     """
     
-    def __init__(self):
-        self.current_user: Optional[Dict] = None
-        logger.info("AuthManager initialized")
+    # Path to users file
+    USERS_FILE = "data/users.json"
     
-    def authenticate(self, password: str) -> bool:
+    def __init__(self):
+        """Initialize AuthManager and load users from file."""
+        self.current_user: Optional[Dict] = None
+        
+        # Users organized by role
+        self.admins: List[Dict] = []
+        self.operators: List[Dict] = []
+        self.developers: List[Dict] = []
+        
+        # Role permissions
+        self.roles: Dict[str, Dict] = {}
+        
+        # Try to load users from file
+        self._load_users_from_file()
+        
+        total_users = len(self.admins) + len(self.operators) + len(self.developers)
+        logger.info(f"AuthManager initialized: {len(self.admins)} admins, {len(self.operators)} operators, {len(self.developers)} developers")
+    
+    # ========================================================================
+    # USER LOADING
+    # ========================================================================
+    
+    def _load_users_from_file(self) -> bool:
         """
-        Authenticate admin password.
+        Load users from data/users.json file.
+        
+        JSON structure:
+        {
+            "users": {
+                "admins": [...],
+                "operators": [...],
+                "developers": [...]
+            },
+            "roles": {...}
+        }
+        
+        Returns:
+            True if loaded successfully, False otherwise
+        """
+        # Try multiple paths
+        possible_paths = [
+            Path(self.USERS_FILE),
+            Path(__file__).parent.parent / "data" / "users.json",
+            Path.cwd() / "data" / "users.json"
+        ]
+        
+        users_file = None
+        for path in possible_paths:
+            if path.exists():
+                users_file = path
+                break
+        
+        if users_file is None:
+            logger.warning("users.json not found, using default users")
+            self._create_default_users()
+            return False
+        
+        try:
+            with open(users_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            users_data = data.get('users', {})
+            
+            # Load users by role folder
+            self.admins = [u for u in users_data.get('admins', []) if u.get('active', True)]
+            self.operators = [u for u in users_data.get('operators', []) if u.get('active', True)]
+            self.developers = [u for u in users_data.get('developers', []) if u.get('active', True)]
+            
+            # Add role field to each user
+            for user in self.admins:
+                user['role'] = UserRole.ADMIN
+            for user in self.operators:
+                user['role'] = UserRole.OPERATOR
+            for user in self.developers:
+                user['role'] = UserRole.DEVELOPER
+            
+            # Load role permissions
+            self.roles = data.get('roles', {})
+            
+            logger.info(f"Loaded users from {users_file}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to load users.json: {e}")
+            self._create_default_users()
+            return False
+    
+    def _create_default_users(self):
+        """Create default users if users.json doesn't exist."""
+        self.admins = [
+            {
+                "username": "admin",
+                "password_hash": self._hash_password("admin123"),
+                "display_name": "Yönetici",
+                "employee_id": "ADM001",
+                "role": UserRole.ADMIN,
+                "active": True
+            }
+        ]
+        
+        self.operators = [
+            {
+                "username": "operator",
+                "password_hash": "",
+                "display_name": "Operatör",
+                "employee_id": "OP000",
+                "role": UserRole.OPERATOR,
+                "active": True
+            }
+        ]
+        
+        self.developers = [
+            {
+                "username": "dev",
+                "password_hash": self._hash_password("dev123"),
+                "display_name": "Geliştirici",
+                "employee_id": "DEV001",
+                "role": UserRole.DEVELOPER,
+                "active": True
+            }
+        ]
+        
+        self.roles = {
+            UserRole.ADMIN: {"can_navigate_back": True, "can_edit_results": True, "can_edit_test_steps": False},
+            UserRole.OPERATOR: {"can_navigate_back": False, "can_edit_results": False, "can_edit_test_steps": False},
+            UserRole.DEVELOPER: {"can_navigate_back": True, "can_edit_results": True, "can_edit_test_steps": True}
+        }
+        
+        logger.info("Created default users (1 admin, 1 operator, 1 developer)")
+    
+    # ========================================================================
+    # AUTHENTICATION
+    # ========================================================================
+    
+    def authenticate(self, username: str, password: str) -> bool:
+        """
+        Authenticate user with username and password.
+        Used for Admin and Developer logins.
+        
+        Args:
+            username: Username to authenticate
+            password: Password to check
+            
+        Returns:
+            True if authenticated successfully
+        """
+        # Find user in all lists
+        user = self._find_user(username)
+        
+        if user is None:
+            logger.warning(f"Authentication failed: User '{username}' not found")
+            return False
+        
+        # Check if user is active
+        if not user.get('active', True):
+            logger.warning(f"Authentication failed: User '{username}' is inactive")
+            return False
+        
+        # Check password
+        password_hash = self._hash_password(password)
+        stored_hash = user.get('password_hash', '')
+        
+        if password_hash != stored_hash:
+            logger.warning(f"Authentication failed: Invalid password for '{username}'")
+            return False
+        
+        # Set current user
+        self.current_user = user.copy()
+        logger.info(f"User authenticated: {user['display_name']} ({user['role']})")
+        
+        return True
+    
+    def authenticate_by_password_only(self, password: str) -> bool:
+        """
+        Authenticate using only password (for quick admin/dev login).
+        Searches admins and developers for matching password.
         
         Args:
             password: Password to check
             
         Returns:
-            True if authenticated as admin
+            True if authenticated successfully
         """
-        # Simple password check (for now)
+        password_hash = self._hash_password(password)
+        
+        # Search admins and developers (not operators - they don't have passwords)
+        for user in self.admins + self.developers:
+            if not user.get('active', True):
+                continue
+                
+            if user.get('password_hash') == password_hash:
+                self.current_user = user.copy()
+                logger.info(f"User authenticated by password: {user['display_name']}")
+                return True
+        
+        # Fallback: check default admin password
         if password == config.DEFAULT_ADMIN_PASSWORD:
             self.current_user = {
-                'role': config.UserRole.ADMIN,
+                'role': UserRole.ADMIN,
                 'username': 'admin',
-                'display_name': 'Yönetici'
+                'display_name': 'Yönetici',
+                'employee_id': 'ADM001'
             }
-            logger.info("Admin authenticated successfully")
+            logger.info("Admin authenticated with default password")
             return True
-        else:
-            logger.warning("Authentication failed")
-            return False
+        
+        logger.warning("Authentication failed: No matching password found")
+        return False
     
-    def authenticate_as_operator(self):
+    def login_as_operator(self, username: str = None):
         """
         Login as operator (no password required).
-        Future: May require operator credentials.
+        
+        Args:
+            username: Specific operator username, or None for default
         """
-        self.current_user = {
-            'role': config.UserRole.OPERATOR,
-            'username': 'operator',
-            'display_name': 'Operatör'
-        }
-        logger.info("Logged in as operator")
+        if username:
+            # Find specific operator
+            for op in self.operators:
+                if op.get('username') == username and op.get('active', True):
+                    self.current_user = op.copy()
+                    logger.info(f"Logged in as operator: {op['display_name']}")
+                    return
+        
+        # Use first active operator or create default
+        if self.operators:
+            self.current_user = self.operators[0].copy()
+            logger.info(f"Logged in as operator: {self.current_user['display_name']}")
+        else:
+            self.current_user = {
+                'role': UserRole.OPERATOR,
+                'username': 'operator',
+                'display_name': 'Operatör',
+                'employee_id': 'OP000'
+            }
+            logger.info("Logged in as default operator")
     
-    def is_admin(self) -> bool:
-        """Check if current user is admin"""
-        return (self.current_user and 
-                self.current_user['role'] == config.UserRole.ADMIN)
-    
-    def is_operator(self) -> bool:
-        """Check if current user is operator"""
-        return (self.current_user and 
-                self.current_user['role'] == config.UserRole.OPERATOR)
-    
-    def get_role(self) -> str:
-        """Get current user role"""
-        if self.current_user:
-            return self.current_user['role']
-        return config.UserRole.OPERATOR  # Default
-    
-    def get_display_name(self) -> str:
-        """Get current user's display name"""
-        if self.current_user:
-            return self.current_user['display_name']
-        return "Kullanıcı"
+    # Alias for backward compatibility
+    def authenticate_as_operator(self, username: str = None):
+        """Alias for login_as_operator."""
+        self.login_as_operator(username)
     
     def logout(self):
-        """Clear current user session"""
-        logger.info(f"User logged out: {self.current_user}")
+        """Clear current user session."""
+        if self.current_user:
+            logger.info(f"User logged out: {self.current_user.get('display_name')}")
         self.current_user = None
     
     # ========================================================================
-    # FUTURE: Load from JSON file
+    # USER LOOKUP
     # ========================================================================
     
-    def _load_users_from_file(self):
+    def _find_user(self, username: str) -> Optional[Dict]:
         """
-        Future implementation: Load users from data/users.json
+        Find user by username in all role lists.
         
-        Example structure:
-        {
-            "users": [
-                {
-                    "username": "admin",
-                    "password_hash": "hashed_password",
-                    "role": "admin",
-                    "display_name": "Yönetici"
-                },
-                {
-                    "username": "operator1",
-                    "password_hash": "hashed_password",
-                    "role": "operator",
-                    "display_name": "Ali Yılmaz"
-                }
-            ]
-        }
+        Args:
+            username: Username to find
+            
+        Returns:
+            User dict or None
         """
-        pass  # Implement when multiple users needed
+        username_lower = username.lower()
+        
+        # Search all role lists
+        for user in self.admins + self.operators + self.developers:
+            if user.get('username', '').lower() == username_lower:
+                return user
+        return None
+    
+    def get_all_users(self, active_only: bool = True) -> List[Dict]:
+        """
+        Get list of all users from all roles.
+        
+        Args:
+            active_only: If True, return only active users
+            
+        Returns:
+            List of user dictionaries
+        """
+        all_users = self.admins + self.operators + self.developers
+        
+        if active_only:
+            return [u for u in all_users if u.get('active', True)]
+        return all_users
+    
+    def get_admins(self) -> List[Dict]:
+        """Get list of all admin users."""
+        return [u for u in self.admins if u.get('active', True)]
+    
+    def get_operators(self) -> List[Dict]:
+        """Get list of all operator users."""
+        return [u for u in self.operators if u.get('active', True)]
+    
+    def get_developers(self) -> List[Dict]:
+        """Get list of all developer users."""
+        return [u for u in self.developers if u.get('active', True)]
+    
+    # ========================================================================
+    # CURRENT USER INFO
+    # ========================================================================
+    
+    def get_role(self) -> str:
+        """Get current user's role."""
+        if self.current_user:
+            return self.current_user.get('role', UserRole.OPERATOR)
+        return UserRole.OPERATOR
+    
+    def get_display_name(self) -> str:
+        """Get current user's display name."""
+        if self.current_user:
+            return self.current_user.get('display_name', 'Kullanıcı')
+        return "Kullanıcı"
+    
+    def get_username(self) -> str:
+        """Get current user's username."""
+        if self.current_user:
+            return self.current_user.get('username', '')
+        return ""
+    
+    def get_employee_id(self) -> str:
+        """Get current user's employee ID."""
+        if self.current_user:
+            return self.current_user.get('employee_id', '')
+        return ""
+    
+    def get_department(self) -> str:
+        """Get current user's department."""
+        if self.current_user:
+            return self.current_user.get('department', '')
+        return ""
+    
+    # ========================================================================
+    # PERMISSION CHECKS
+    # ========================================================================
+    
+    def is_admin(self) -> bool:
+        """Check if current user is admin."""
+        return self.get_role() == UserRole.ADMIN
+    
+    def is_operator(self) -> bool:
+        """Check if current user is operator."""
+        return self.get_role() == UserRole.OPERATOR
+    
+    def is_developer(self) -> bool:
+        """Check if current user is developer."""
+        return self.get_role() == UserRole.DEVELOPER
+    
+    def can_navigate_back(self) -> bool:
+        """
+        Check if current user can navigate to previous steps.
+        Admins and Developers can navigate back.
+        """
+        role = self.get_role()
+        
+        # Check role permissions from loaded data
+        if role in self.roles:
+            return self.roles[role].get('can_navigate_back', False)
+        
+        # Fallback to hardcoded list
+        return role in UserRole.BACKWARD_NAV_ROLES
+    
+    def can_edit_results(self) -> bool:
+        """
+        Check if current user can edit submitted results.
+        Admins and Developers can edit results.
+        """
+        role = self.get_role()
+        
+        if role in self.roles:
+            return self.roles[role].get('can_edit_results', False)
+        
+        return role in UserRole.EDIT_ROLES
+    
+    def can_export(self) -> bool:
+        """
+        Check if current user can export reports.
+        Admins and Developers can export.
+        """
+        role = self.get_role()
+        
+        if role in self.roles:
+            return self.roles[role].get('can_export', True)
+        
+        return role in UserRole.EXPORT_ROLES
+    
+    def can_edit_test_steps(self) -> bool:
+        """
+        Check if current user can edit test steps (Developer mode).
+        Only Developers can edit test steps.
+        
+        Future feature: UI for adding/editing test steps.
+        """
+        role = self.get_role()
+        
+        if role in self.roles:
+            return self.roles[role].get('can_edit_test_steps', False)
+        
+        return role in UserRole.EDIT_STEPS_ROLES
+    
+    def has_permission(self, permission: str) -> bool:
+        """
+        Check if current user has a specific permission.
+        
+        Args:
+            permission: Permission name (e.g., 'can_navigate_back', 'can_edit_test_steps')
+            
+        Returns:
+            True if user has the permission
+        """
+        role = self.get_role()
+        
+        if role in self.roles:
+            return self.roles[role].get(permission, False)
+        
+        return False
+    
+    # ========================================================================
+    # PASSWORD UTILITIES
+    # ========================================================================
     
     @staticmethod
     def _hash_password(password: str) -> str:
-        """Hash password using SHA-256 (for future use)"""
+        """
+        Hash password using MD5 (for demo compatibility).
+        
+        Note: Use SHA-256 in production!
+        
+        Args:
+            password: Plain text password
+            
+        Returns:
+            Hashed password string
+        """
+        return hashlib.md5(password.encode()).hexdigest()
+    
+    @staticmethod
+    def hash_password_sha256(password: str) -> str:
+        """
+        Hash password using SHA-256 (recommended for production).
+        
+        Args:
+            password: Plain text password
+            
+        Returns:
+            Hashed password string
+        """
         return hashlib.sha256(password.encode()).hexdigest()
+    
+    # ========================================================================
+    # USER MANAGEMENT (Future)
+    # ========================================================================
+    
+    def add_user(self, username: str, password: str, role: str, 
+                 display_name: str, employee_id: str = "", 
+                 department: str = "") -> bool:
+        """
+        Add a new user (for future admin panel).
+        
+        Args:
+            username: Unique username
+            password: Plain text password (will be hashed)
+            role: User role
+            display_name: Display name
+            employee_id: Employee ID
+            department: Department name
+            
+        Returns:
+            True if user added successfully
+        """
+        # Check if username exists
+        if self._find_user(username):
+            logger.warning(f"Cannot add user: '{username}' already exists")
+            return False
+        
+        new_user = {
+            "username": username,
+            "password_hash": self._hash_password(password),
+            "role": role,
+            "display_name": display_name,
+            "employee_id": employee_id,
+            "department": department,
+            "active": True
+        }
+        
+        self.users.append(new_user)
+        logger.info(f"User added: {display_name} ({role})")
+        
+        return True
+    
+    def save_users_to_file(self) -> bool:
+        """
+        Save current users list to JSON file.
+        
+        Returns:
+            True if saved successfully
+        """
+        try:
+            data = {
+                "version": "1.0",
+                "users": self.users,
+                "roles": self.roles
+            }
+            
+            with open(self.USERS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            
+            logger.info(f"Users saved to {self.USERS_FILE}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to save users: {e}")
+            return False
 ```
 
 # utils\logger.py

@@ -44,11 +44,11 @@ class TestManager(QObject):
     
     def __init__(self, auth_manager=None):
         super().__init__()
-        
+        self.auth_manager = auth_manager
         # Specialized managers
         self.timer_manager = TimerManager()
         self.navigation_manager = NavigationManager()
-        self.result_manager = ResultManager()
+        self.result_manager = ResultManager(auth_manager)
         
         # Connect manager signals
         self.timer_manager.timer_tick.connect(self._on_timer_tick)
@@ -61,7 +61,7 @@ class TestManager(QObject):
         
         # Continuous writer
         self.continuous_writer = ContinuousWriter()
-        self.auth_manager = auth_manager
+        
         logger.info("TestManager initialized (refactored)")
     
     # ════════════════════════════════════════════════════════

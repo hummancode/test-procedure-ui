@@ -1,0 +1,56 @@
+{
+  "session_id": "20260202_161033",
+  "stock_number": "ABC123",
+  "serial_number": "456789",
+  "station_number": "ST-01",
+  "sip_code": "X99",
+  "start_time": "2026-02-02T16:10:33.163449",
+  "end_time": null,
+  "duration_seconds": 63790,
+  "completion_percentage": 0.0,
+  "passed_count": 0,
+  "failed_count": 0,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "Görsel Kontrol - Ön Panel",
+      "status": "in_progress",
+      "start_time": "02/02/2026 16:10:33",
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 5,
+      "completed_by": null,
+      "input_validation": {}
+    },
+    {
+      "step_id": 2,
+      "name": "Ara Adım - Bilgilendirme",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 10,
+      "completed_by": null,
+      "input_validation": {}
+    },
+    {
+      "step_id": 3,
+      "name": "Voltaj Ölçümü",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 120,
+      "completed_by": null,
+      "input_validation": {
+        "min": 11.5,
+        "max": 12.5
+      }
+    }
+  ],
+  "last_updated": "2026-02-03T09:53:44.154722",
+  "file_version": "1.0"
+}
