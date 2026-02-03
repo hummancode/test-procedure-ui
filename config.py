@@ -1,8 +1,27 @@
-"""
-Configuration and Constants for Test Procedure UI
-Phase 2 - Updated with larger fonts, new UI elements, and continuous writing
-"""
-
+import sys
+from pathlib import Path
+def _resolve_path(relative_path: str) -> str:
+    """Resolve relative path for both development and PyInstaller"""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller bundled path
+        base = Path(sys._MEIPASS)
+        if (base / relative_path).exists():
+            return str(base / relative_path)
+        # Fallback to executable directory
+        return str(Path(sys.executable).parent / relative_path)
+    else:
+        # Development mode - __file__ is config.py in project root
+        return str(Path(__file__).parent / relative_path)
+def _get_writable_path(relative_path: str) -> str:
+    """Get writable path (always in executable/project directory, never in _MEIPASS)"""
+    if getattr(sys, 'frozen', False):
+        return str(Path(sys.executable).parent / relative_path)
+    else:
+        return str(Path(__file__).parent / relative_path)
+    
+SETTINGS_FILE = _get_writable_path("app_settings.json")
+DEFAULT_UPDATE_FOLDER = _get_writable_path("data/updates")
+DEFAULT_EXPORT_FOLDER = _get_writable_path("data/exports")
 # ============================================================================
 # COLOR PALETTE (Dark Blue Theme)
 # ============================================================================
@@ -43,6 +62,21 @@ class Colors:
 # ============================================================================
 
 class Labels:
+        # Test Step Editor (NEW)
+    MENU_DEVELOPER = "Geliştirici"
+    MENU_EDIT_STEPS = "Test Adımlarını Düzenle..."
+    STEP_EDITOR_TITLE = "Test Adımları Editörü"
+    STEP_EDITOR_STEP_LIST = "Adım Listesi"
+    STEP_EDITOR_STEP_DETAILS = "Adım Detayları"
+    STEP_EDITOR_ADD_STEP = "Yeni Adım Ekle"
+    STEP_EDITOR_DELETE_STEP = "Adımı Sil"
+    STEP_EDITOR_BASIC_INFO = "Temel Bilgiler"
+    STEP_EDITOR_INPUT_SETTINGS = "Giriş Ayarları"
+    STEP_EDITOR_NUMBER_SETTINGS = "Sayısal Giriş Ayarları"
+    # Input types (Turkish)
+    INPUT_TYPE_NONE = "Yok (Giriş Yok)"
+    INPUT_TYPE_PASS_FAIL = "Geçti-Kaldı"
+    INPUT_TYPE_NUMBER = "Sayı"
     """Turkish language labels for UI elements"""
     # Header Row
     STOCK_NO = "STOK NO"
@@ -60,8 +94,8 @@ class Labels:
     # Buttons
     PROCEED = "İlerle >"
     WRITE = "YAZ"
-    ADD_COMMENT = "YORUM EKLE"
-    HIDE_COMMENT = "YORUM GİZLE"
+    ADD_COMMENT = "YORUM"
+    HIDE_COMMENT = "GİZLE"
     PASS = "GEÇTİ"
     FAIL = "KALDI"
     OK = "Tamam"
@@ -111,8 +145,8 @@ class Labels:
 # WINDOW SETTINGS
 # ============================================================================
 
-WINDOW_MIN_WIDTH = 1024
-WINDOW_MIN_HEIGHT = 768
+WINDOW_MIN_WIDTH = 1920
+WINDOW_MIN_HEIGHT = 1080
 WINDOW_TITLE = "Test Prosedürü Uygulaması"
 
 # Font Settings (60% increase from original)
@@ -215,7 +249,8 @@ SIDEBAR_ANIMATION_DURATION = 200  # milliseconds
 
 IMAGE_MAX_SIZE_MB = 10
 SUPPORTED_IMAGE_FORMATS = ['.png', '.jpg', '.jpeg', '.bmp']
-PLACEHOLDER_IMAGE_PATH = "resources/images/placeholder.png"
+PLACEHOLDER_IMAGE_PATH = _resolve_path("resources/images/placeholder.png")
+
 
 
 # ============================================================================
@@ -248,9 +283,8 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 # STATUS EMOJIS
 # ============================================================================
 
-EMOJI_HAPPY = "😊"
-EMOJI_SAD = "☹️"
-EMOJI_NEUTRAL = "😐"
+ICON_HAPPY = _resolve_path("resources/icons/happy.png")
+ICON_SAD = _resolve_path("resources/icons/sad.png")
 
 
 # ============================================================================
@@ -299,7 +333,8 @@ class UserRole:
     
     # Roles that require password login
     PASSWORD_REQUIRED_ROLES = [ADMIN, DEVELOPER]
-    
+    # NEW: Roles that can edit time limits only (Admin + Developer)
+    EDIT_TIME_LIMIT_ROLES = [ADMIN, DEVELOPER]
     @classmethod
     def get_display_name(cls, role: str) -> str:
         """Get Turkish display name for a role."""
@@ -319,15 +354,24 @@ class UserRole:
     def can_export(cls, role: str) -> bool:
         """Check if role can export reports."""
         return role in cls.EXPORT_ROLES
+
+    # Roles that can edit test steps (Developer mode)
+    
+    
+
     
     @classmethod
     def can_edit_test_steps(cls, role: str) -> bool:
-        """Check if role can edit test steps (Developer mode)."""
+        '''Check if role can fully edit test steps (Developer mode).'''
         return role in cls.EDIT_STEPS_ROLES
-
+    
+    @classmethod
+    def can_edit_time_limits(cls, role: str) -> bool:
+        '''Check if role can edit time limits (Admin and Developer).'''
+        return role in cls.EDIT_TIME_LIMIT_ROLES
 
 # Default admin credentials (used as fallback if users.json not found)
 DEFAULT_ADMIN_PASSWORD = "admin123"  # Change in production!
 
 # Path to users file
-USERS_FILE_PATH = "data/users.json"
+USERS_FILE_PATH = _resolve_path("data/users.json")

@@ -1,12 +1,12 @@
 {
-  "session_id": "20260203_150915",
+  "session_id": "20260203_150932",
   "stock_number": "1",
   "serial_number": "2",
-  "station_number": "",
-  "sip_code": "",
-  "start_time": "2026-02-03T15:09:15.332709",
+  "station_number": "123",
+  "sip_code": "123",
+  "start_time": "2026-02-03T15:09:32.320789",
   "end_time": null,
-  "duration_seconds": 20,
+  "duration_seconds": 4,
   "completion_percentage": 0.0,
   "passed_count": 0,
   "failed_count": 0,
@@ -15,7 +15,7 @@
       "step_id": 1,
       "name": "Görsel Kontrol - Ön Panel1",
       "status": "in_progress",
-      "start_time": "03/02/2026 15:09:15",
+      "start_time": "03/02/2026 15:09:32",
       "actual_duration": null,
       "result_value": null,
       "comment": null,
@@ -83,9 +83,9 @@
     "geratech_kalibrasyon": "2027-01-01",
     "iba_magicmax_kalibrasyon": "2027-01-01",
     "iba_primus_a_kalibrasyon": "2027-01-01",
-    "istasyon": "",
-    "sip_code": ""
+    "istasyon": "123",
+    "sip_code": "123"
   },
-  "last_updated": "2026-02-03T15:09:35.400511",
+  "last_updated": "2026-02-03T15:09:36.504207",
   "file_version": "1.0"
 }

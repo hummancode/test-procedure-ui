@@ -8,9 +8,9 @@
   "steps": [
     {
       "step_id": 1,
-      "name": "Görsel Kontrol - Ön Panel",
+      "name": "Görsel Kontrol - Ön Panel1",
       "description": "Ön paneldeki tüm göstergelerin çalıştığını doğrulayın.\n\nKontrol edilecekler:\n• LED'lerin yanıp yanmadığını kontrol edin\n• Ekran parlaklığının uygun seviyede olduğunu doğrulayın\n• Fiziksel hasarlar için dış kasayı inceleyin\n\nBeklenen sonuç: Tüm göstergeler normal çalışıyor olmalı.",
-      "time_limit": 5,
+      "time_limit": 15,
       "image_path": "resources/images/step_001.png",
       "input_type": "pass_fail",
       "input_label": "Sonuç",
@@ -35,8 +35,21 @@
       "input_type": "number",
       "input_label": "Voltaj (V)",
       "input_validation": {
-        "min": 11.5,
-        "max": 12.5
+        "max": 12.5,
+        "min": 11.5
+      }
+    },
+    {
+      "step_id": 4,
+      "name": "Yeni Adım 4",
+      "description": "",
+      "time_limit": 60,
+      "image_path": "none",
+      "input_type": "number",
+      "input_label": "Test Sonucu",
+      "input_validation": {
+        "max": 100.0,
+        "min": 0.0
       }
     }
   ]

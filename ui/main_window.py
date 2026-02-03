@@ -16,7 +16,7 @@ from models.enums import InputType, TimerStatus
 from persistence import ContinuousWriter
 import config
 from utils.logger import setup_logger
-
+from ui.dialogs.test_step_editor_dialog import TestStepEditorDialog
 logger = setup_logger(__name__)
 
 
@@ -190,7 +190,21 @@ class MainWindow(QMainWindow):
         self.user_menu.addAction(self.switch_user_action)
         
         logger.debug("Menu bar created with File, View, and User menus")
-    
+        # ====================================================================
+        # Developer menu (Only visible to Developers and Admins)
+        # ====================================================================
+        if self.auth_manager:
+            role = self.auth_manager.get_role()
+            if role in [config.UserRole.DEVELOPER, config.UserRole.ADMIN]:
+                self.developer_menu = menubar.addMenu("Geliştirici")
+                
+                # Edit test steps action
+                self.edit_steps_action = QAction("Test Adımlarını Düzenle...", self)
+                self.edit_steps_action.setShortcut("Ctrl+E")
+                self.edit_steps_action.triggered.connect(self._on_edit_test_steps)
+                self.developer_menu.addAction(self.edit_steps_action)
+                
+                logger.debug("Developer menu created")
     def _create_status_bar(self):
         """Create status bar to show continuous writer status"""
         self.status_bar = QStatusBar()
@@ -574,3 +588,135 @@ class MainWindow(QMainWindow):
                 self.content_widget.export_button.click()
         
         logger.info("Test procedure completed")
+    def _on_edit_test_steps(self):
+        """
+        Open the test step editor dialog.
+        
+        Permission levels:
+        - Developer: Can edit all fields, add/delete steps
+        - Admin: Can only edit time_limit field
+        
+        Triggered by:
+        - Menu: Geliştirici → Test Adımlarını Düzenle...
+        - Shortcut: Ctrl+E
+        """
+        from ui.dialogs.test_step_editor_dialog import TestStepEditorDialog
+        
+        if not self.test_manager.steps:
+            QMessageBox.warning(
+                self,
+                "Uyarı",
+                "Düzenlenecek test adımı bulunamadı. Önce bir test yükleyin.",
+                QMessageBox.Ok
+            )
+            return
+        
+        # Pass the actual TestStep objects to the dialog
+        dialog = TestStepEditorDialog(self.test_manager.steps, self.auth_manager, self)
+        dialog.steps_updated.connect(self._on_steps_updated)
+        dialog.exec_()
+    
+    def _on_steps_updated(self, updated_steps: list):
+        """
+        Handle updated steps from the editor.
+        
+        Args:
+            updated_steps: List of step dictionaries with ALL required fields
+        """
+        from models.test_step import TestStep
+        
+        try:
+            # Convert dictionaries back to TestStep objects
+            new_steps = []
+            for step_data in updated_steps:
+                step = TestStep.from_dict(step_data)
+                new_steps.append(step)
+            
+            # Update test manager
+            self.test_manager.steps = new_steps
+            
+            # Update session steps if session exists
+            if self.test_manager.session:
+                self.test_manager.session.steps = new_steps
+            
+            # Refresh sidebar
+            if hasattr(self, 'sidebar') and self.sidebar:
+                self.sidebar.set_steps(new_steps)
+            
+            # Save to file
+            self._save_steps_to_file(updated_steps)
+            
+            # Show success message
+            self.status_bar.showMessage(
+                f"Test adımları güncellendi ({len(new_steps)} adım)", 
+                5000
+            )
+            
+            logger.info(f"Steps updated from editor: {len(new_steps)} steps")
+            
+        except Exception as e:
+            logger.error(f"Failed to update steps: {e}")
+            QMessageBox.critical(
+                self,
+                "Hata",
+                f"Adımlar güncellenirken hata oluştu: {e}",
+                QMessageBox.Ok
+            )
+    
+    def _save_steps_to_file(self, steps_data: list):
+        """
+        Save updated steps to the test procedure JSON file.
+        
+        Args:
+            steps_data: List of step dictionaries
+        """
+        import json
+        
+        # Default test file path
+        test_file_path = "data/sample_test.json"
+        
+        try:
+            # Load existing file
+            with open(test_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Clean up step data for JSON (remove runtime state)
+            clean_steps = []
+            for step in steps_data:
+                clean_step = {
+                    'step_id': step['step_id'],
+                    'name': step['name'],
+                    'description': step['description'],
+                    'time_limit': step['time_limit'],
+                    'image_path': step.get('image_path'),
+                    'input_type': step['input_type'],
+                    'input_label': step.get('input_label', 'Test Sonucu'),
+                    'input_validation': step.get('input_validation', {})
+                }
+                clean_steps.append(clean_step)
+            
+            # Update steps in data
+            data['steps'] = clean_steps
+            
+            # Save back
+            with open(test_file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"Steps saved to {test_file_path}")
+            
+        except Exception as e:
+            logger.error(f"Failed to save steps to file: {e}")
+    def closeEvent(self, event):
+        """Handle window close - ensure clean shutdown"""
+        logger.info("MainWindow closing - stopping timers")
+        
+        # Stop the test manager timer
+        if hasattr(self, 'test_manager') and self.test_manager:
+            if hasattr(self.test_manager, 'timer'):
+                self.test_manager.timer.stop()
+            # Write final update
+            if hasattr(self.test_manager, 'continuous_writer'):
+                self.test_manager.continuous_writer.write_update()
+        
+        event.accept()
+        logger.info("MainWindow closed cleanly")

@@ -11,6 +11,7 @@ import os
 from typing import Optional, Dict, Any
 from pathlib import Path
 from utils.logger import setup_logger
+import config
 
 logger = setup_logger(__name__)
 
@@ -25,14 +26,14 @@ class SettingsManager:
     """
     
     # Default settings file location
-    SETTINGS_FILE = "app_settings.json"
+    #SETTINGS_FILE = "app_settings.json"
     
     # Default values
-    DEFAULT_UPDATE_FOLDER = "data/updates"
+    DEFAULT_UPDATE_FOLDER = config.DEFAULT_UPDATE_FOLDER
     DEFAULT_UPDATE_INTERVAL = 10  # seconds
     
     def __init__(self):
-        self.settings_path = self.SETTINGS_FILE
+        self.settings_path = config.SETTINGS_FILE
         self.settings: Dict[str, Any] = {}
         self._load_settings()
         

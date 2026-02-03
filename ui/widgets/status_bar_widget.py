@@ -8,6 +8,7 @@ from PyQt5.QtGui import QFont
 import config
 from models.enums import TimerStatus
 from utils.logger import setup_logger
+from PyQt5.QtGui import QFont, QPixmap
 
 logger = setup_logger(__name__)
 
@@ -156,29 +157,70 @@ class StatusBarWidget(QWidget):
         return widget
     
     def _create_emoji_section(self) -> QWidget:
-        """Create status emoji section"""
+        """Create status emoji section with image that fills the container"""
         widget = QWidget()
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(5, 5, 5, 5)
         
-        # Emoji label with larger size
-        self.emoji_label = QLabel(config.EMOJI_NEUTRAL)
-        self.emoji_label.setStyleSheet(f"""
-            font-size: {config.FONT_SIZE_EMOJI}pt;
-            background-color: {config.Colors.INPUT_BACKGROUND};
-            border-radius: {config.EMOJI_BACKGROUND_SIZE // 2}px;
-            padding: 10px;
-        """)
+        # Emoji label - uses QPixmap, preserves aspect ratio
+        self.emoji_label = QLabel()
         self.emoji_label.setAlignment(Qt.AlignCenter)
-        self.emoji_label.setFixedSize(
-            config.EMOJI_BACKGROUND_SIZE,
-            config.EMOJI_BACKGROUND_SIZE
-        )
+        self.emoji_label.setMinimumSize(60, 60)
+        
+        # Set size policy to expand
+        from PyQt5.QtWidgets import QSizePolicy
+        self.emoji_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        
+        # Store original pixmaps for resizing
+        self._happy_pixmap = QPixmap(config.ICON_HAPPY)
+        self._sad_pixmap = QPixmap(config.ICON_SAD)
+        self._is_happy = True
+        
+        # Load default (happy) image
+        self._set_emoji_image(True)
         
         layout.addWidget(self.emoji_label)
         widget.setLayout(layout)
         
         return widget
+    
+    def _set_emoji_image(self, is_happy: bool):
+        """
+        Load and set emoji image with aspect ratio preserved.
+        
+        Args:
+            is_happy: True for happy face, False for sad face
+        """
+        self._is_happy = is_happy
+        pixmap = self._happy_pixmap if is_happy else self._sad_pixmap
+        
+        if not pixmap.isNull():
+            # Scale to fit label size while keeping aspect ratio
+            label_size = self.emoji_label.size()
+            scaled_pixmap = pixmap.scaled(
+                label_size,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            self.emoji_label.setPixmap(scaled_pixmap)
+            logger.debug(f"Emoji image loaded: {'happy' if is_happy else 'sad'}")
+        else:
+            # Fallback to text if image not found
+            fallback = "😊" if is_happy else "☹️"
+            self.emoji_label.setText(fallback)
+            self.emoji_label.setStyleSheet(f"""
+                font-size: {config.FONT_SIZE_EMOJI}pt;
+                background-color: {config.Colors.INPUT_BACKGROUND};
+            """)
+            logger.warning(f"Emoji image not found, using text fallback")
+    
+    def resizeEvent(self, event):
+        """Handle resize to update emoji image size"""
+        super().resizeEvent(event)
+        # Re-apply image with new size
+        if hasattr(self, '_is_happy'):
+            self._set_emoji_image(self._is_happy)
     
     def update_timer(self, remaining_seconds: int, status: str):
         """
@@ -233,19 +275,10 @@ class StatusBarWidget(QWidget):
     
     def update_emoji(self, is_happy: bool):
         """
-        Update status emoji.
+        Update status emoji image.
         
         Args:
-            is_happy: True for 😊, False for ☹️
+            is_happy: True for happy face, False for sad face
         """
-        emoji = config.EMOJI_HAPPY if is_happy else config.EMOJI_SAD
-        self.emoji_label.setText(emoji)
-        
-        # Update background color
-        bg_color = config.Colors.SUCCESS if is_happy else config.Colors.ERROR
-        self.emoji_label.setStyleSheet(f"""
-            font-size: {config.FONT_SIZE_EMOJI}pt;
-            background-color: {bg_color};
-            border-radius: {config.EMOJI_BACKGROUND_SIZE // 2}px;
-            padding: 10px;
-        """)
+        self._set_emoji_image(is_happy)
+        logger.debug(f"Emoji updated: {'happy' if is_happy else 'sad'}")

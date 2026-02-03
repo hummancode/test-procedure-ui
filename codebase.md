@@ -4,14 +4,18 @@
 # Python
 __pycache__/
 *.py[cod]
-*.class
+*$py.class
 *.so
 .Python
 env/
 venv/
 *.egg-info/
-dist/
+*.egg
+
+# PyInstaller build artifacts
 build/
+dist/
+*.spec
 
 # IDE
 .vscode/
@@ -19,6 +23,10 @@ build/
 *.swp
 *.swo
 *~
+
+# Spyder
+.spyproject/
+.spyderproject
 
 # Data files (don't commit autosaves/exports)
 data/autosave/*
@@ -30,13 +38,20 @@ data/exports/*
 logs/*.log
 *.log
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Spyder
-.spyproject/
+# Runtime/settings files (auto-generated)
+app_settings.json
 
+# Large files
+*.exe
+codebase.md
+
+# Conda
+*.conda
 ```
 
 # app_settings.json
@@ -47,7 +62,27 @@ Thumbs.db
   "last_station": "",
   "window_geometry": null,
   "version": "1.0",
-  "update_interval": 10
+  "update_interval": 10,
+  "last_session_metadata": {
+    "stok_no": "1",
+    "opsiyonel_stok_no": "2312",
+    "tanim": "21",
+    "teu_udk": "2",
+    "seri_no": "2",
+    "revizyon_261": "assafgggg",
+    "test_donanimi_revizyon": "as",
+    "test_yazilimi_revizyon": "21",
+    "is_tipi_no": "12",
+    "kay_yazilimi_versiyon": "AS",
+    "sky_yazilimi_versiyon": "12",
+    "istasyon": "",
+    "sip_code": "",
+    "fluke_esa620_kalibrasyon": "2027-01-01",
+    "italsea_7proglcd_kalibrasyon": "2027-01-01",
+    "geratech_kalibrasyon": "2027-01-01",
+    "iba_magicmax_kalibrasyon": "2027-01-01",
+    "iba_primus_a_kalibrasyon": "2027-01-01"
+  }
 }
 ```
 
@@ -281,6 +316,21 @@ class Colors:
 # ============================================================================
 
 class Labels:
+        # Test Step Editor (NEW)
+    MENU_DEVELOPER = "Geliştirici"
+    MENU_EDIT_STEPS = "Test Adımlarını Düzenle..."
+    STEP_EDITOR_TITLE = "Test Adımları Editörü"
+    STEP_EDITOR_STEP_LIST = "Adım Listesi"
+    STEP_EDITOR_STEP_DETAILS = "Adım Detayları"
+    STEP_EDITOR_ADD_STEP = "Yeni Adım Ekle"
+    STEP_EDITOR_DELETE_STEP = "Adımı Sil"
+    STEP_EDITOR_BASIC_INFO = "Temel Bilgiler"
+    STEP_EDITOR_INPUT_SETTINGS = "Giriş Ayarları"
+    STEP_EDITOR_NUMBER_SETTINGS = "Sayısal Giriş Ayarları"
+    # Input types (Turkish)
+    INPUT_TYPE_NONE = "Yok (Giriş Yok)"
+    INPUT_TYPE_PASS_FAIL = "Geçti-Kaldı"
+    INPUT_TYPE_NUMBER = "Sayı"
     """Turkish language labels for UI elements"""
     # Header Row
     STOCK_NO = "STOK NO"
@@ -298,8 +348,8 @@ class Labels:
     # Buttons
     PROCEED = "İlerle >"
     WRITE = "YAZ"
-    ADD_COMMENT = "YORUM EKLE"
-    HIDE_COMMENT = "YORUM GİZLE"
+    ADD_COMMENT = "YORUM"
+    HIDE_COMMENT = "GİZLE"
     PASS = "GEÇTİ"
     FAIL = "KALDI"
     OK = "Tamam"
@@ -349,8 +399,8 @@ class Labels:
 # WINDOW SETTINGS
 # ============================================================================
 
-WINDOW_MIN_WIDTH = 1024
-WINDOW_MIN_HEIGHT = 768
+WINDOW_MIN_WIDTH = 1920
+WINDOW_MIN_HEIGHT = 1080
 WINDOW_TITLE = "Test Prosedürü Uygulaması"
 
 # Font Settings (60% increase from original)
@@ -486,9 +536,8 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 # STATUS EMOJIS
 # ============================================================================
 
-EMOJI_HAPPY = "😊"
-EMOJI_SAD = "☹️"
-EMOJI_NEUTRAL = "😐"
+ICON_HAPPY = "resources/icons/happy.png"
+ICON_SAD = "resources/icons/sad.png"
 
 
 # ============================================================================
@@ -537,7 +586,8 @@ class UserRole:
     
     # Roles that require password login
     PASSWORD_REQUIRED_ROLES = [ADMIN, DEVELOPER]
-    
+    # NEW: Roles that can edit time limits only (Admin + Developer)
+    EDIT_TIME_LIMIT_ROLES = [ADMIN, DEVELOPER]
     @classmethod
     def get_display_name(cls, role: str) -> str:
         """Get Turkish display name for a role."""
@@ -557,12 +607,21 @@ class UserRole:
     def can_export(cls, role: str) -> bool:
         """Check if role can export reports."""
         return role in cls.EXPORT_ROLES
+
+    # Roles that can edit test steps (Developer mode)
+    
+    
+
     
     @classmethod
     def can_edit_test_steps(cls, role: str) -> bool:
-        """Check if role can edit test steps (Developer mode)."""
+        '''Check if role can fully edit test steps (Developer mode).'''
         return role in cls.EDIT_STEPS_ROLES
-
+    
+    @classmethod
+    def can_edit_time_limits(cls, role: str) -> bool:
+        '''Check if role can edit time limits (Admin and Developer).'''
+        return role in cls.EDIT_TIME_LIMIT_ROLES
 
 # Default admin credentials (used as fallback if users.json not found)
 DEFAULT_ADMIN_PASSWORD = "admin123"  # Change in production!
@@ -584,9 +643,9 @@ USERS_FILE_PATH = "data/users.json"
   "steps": [
     {
       "step_id": 1,
-      "name": "Görsel Kontrol - Ön Panel",
+      "name": "Görsel Kontrol - Ön Panel1",
       "description": "Ön paneldeki tüm göstergelerin çalıştığını doğrulayın.\n\nKontrol edilecekler:\n• LED'lerin yanıp yanmadığını kontrol edin\n• Ekran parlaklığının uygun seviyede olduğunu doğrulayın\n• Fiziksel hasarlar için dış kasayı inceleyin\n\nBeklenen sonuç: Tüm göstergeler normal çalışıyor olmalı.",
-      "time_limit": 5,
+      "time_limit": 15,
       "image_path": "resources/images/step_001.png",
       "input_type": "pass_fail",
       "input_label": "Sonuç",
@@ -611,11 +670,120 @@ USERS_FILE_PATH = "data/users.json"
       "input_type": "number",
       "input_label": "Voltaj (V)",
       "input_validation": {
-        "min": 11.5,
-        "max": 12.5
+        "max": 12.5,
+        "min": 11.5
+      }
+    },
+    {
+      "step_id": 4,
+      "name": "Yeni Adım 4",
+      "description": "",
+      "time_limit": 60,
+      "image_path": "none",
+      "input_type": "number",
+      "input_label": "Test Sonucu",
+      "input_validation": {
+        "max": 100.0,
+        "min": 0.0
       }
     }
   ]
+}
+```
+
+# data\updates\GuncellemeRaporu__20260203_1.json
+
+```json
+{
+  "session_id": "20260203_142509",
+  "stock_number": "1",
+  "serial_number": "2",
+  "station_number": "",
+  "sip_code": "",
+  "start_time": "2026-02-03T14:25:09.275300",
+  "end_time": null,
+  "duration_seconds": 20,
+  "completion_percentage": 0.0,
+  "passed_count": 0,
+  "failed_count": 0,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "Görsel Kontrol - Ön Panel1",
+      "status": "in_progress",
+      "start_time": "03/02/2026 14:25:09",
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 15,
+      "completed_by": null,
+      "input_validation": {}
+    },
+    {
+      "step_id": 2,
+      "name": "Ara Adım - Bilgilendirme",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 10,
+      "completed_by": null,
+      "input_validation": {}
+    },
+    {
+      "step_id": 3,
+      "name": "Voltaj Ölçümü",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 120,
+      "completed_by": null,
+      "input_validation": {
+        "max": 12.5,
+        "min": 11.5
+      }
+    },
+    {
+      "step_id": 4,
+      "name": "Yeni Adım 4",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 60,
+      "completed_by": null,
+      "input_validation": {
+        "max": 100.0,
+        "min": 0.0
+      }
+    }
+  ],
+  "metadata": {
+    "stok_no": "1",
+    "opsiyonel_stok_no": "2312",
+    "tanim": "21",
+    "teu_udk": "2",
+    "seri_no": "2",
+    "revizyon_261": "assafgggg",
+    "test_donanimi_revizyon": "as",
+    "test_yazilimi_revizyon": "21",
+    "is_tipi_no": "12",
+    "kay_yazilimi_versiyon": "AS",
+    "sky_yazilimi_versiyon": "12",
+    "fluke_esa620_kalibrasyon": "2027-01-01",
+    "italsea_7proglcd_kalibrasyon": "2027-01-01",
+    "geratech_kalibrasyon": "2027-01-01",
+    "iba_magicmax_kalibrasyon": "2027-01-01",
+    "iba_primus_a_kalibrasyon": "2027-01-01",
+    "istasyon": "",
+    "sip_code": ""
+  },
+  "last_updated": "2026-02-03T14:25:29.293021",
+  "file_version": "1.0"
 }
 ```
 
@@ -858,14 +1026,14 @@ USERS_FILE_PATH = "data/users.json"
 
 ```json
 {
-  "session_id": "20260202_161033",
+  "session_id": "20260202_161223",
   "stock_number": "ABC123",
   "serial_number": "456789",
   "station_number": "ST-01",
   "sip_code": "X99",
-  "start_time": "2026-02-02T16:10:33.163449",
+  "start_time": "2026-02-02T16:12:23.796337",
   "end_time": null,
-  "duration_seconds": 61790,
+  "duration_seconds": 79890,
   "completion_percentage": 0.0,
   "passed_count": 0,
   "failed_count": 0,
@@ -874,7 +1042,7 @@ USERS_FILE_PATH = "data/users.json"
       "step_id": 1,
       "name": "Görsel Kontrol - Ön Panel",
       "status": "in_progress",
-      "start_time": "02/02/2026 16:10:33",
+      "start_time": "02/02/2026 16:12:23",
       "actual_duration": null,
       "result_value": null,
       "comment": null,
@@ -910,7 +1078,7 @@ USERS_FILE_PATH = "data/users.json"
       }
     }
   ],
-  "last_updated": "2026-02-03T09:20:24.016919",
+  "last_updated": "2026-02-03T14:23:54.464522",
   "file_version": "1.0"
 }
 ```
@@ -919,25 +1087,25 @@ USERS_FILE_PATH = "data/users.json"
 
 ```json
 {
-  "session_id": "20260203_085610",
+  "session_id": "20260203_092543",
   "stock_number": "ABC123",
   "serial_number": "456789",
   "station_number": "ST-01",
   "sip_code": "X99",
-  "start_time": "2026-02-03T08:56:10.658604",
-  "end_time": "2026-02-03T09:18:49.268874",
-  "duration_seconds": 1358,
-  "completion_percentage": 100.0,
+  "start_time": "2026-02-03T09:25:43.451264",
+  "end_time": null,
+  "duration_seconds": 50,
+  "completion_percentage": 33.33333333333333,
   "passed_count": 1,
-  "failed_count": 2,
+  "failed_count": 0,
   "steps": [
     {
       "step_id": 1,
       "name": "Görsel Kontrol - Ön Panel",
-      "status": "failed",
-      "start_time": "03/02/2026 08:56:10",
-      "actual_duration": 32,
-      "result_value": "FAIL",
+      "status": "passed",
+      "start_time": "03/02/2026 09:25:43",
+      "actual_duration": 14,
+      "result_value": "PASS",
       "comment": "",
       "time_limit": 5,
       "completed_by": "Sistem Yöneticisi",
@@ -946,32 +1114,32 @@ USERS_FILE_PATH = "data/users.json"
     {
       "step_id": 2,
       "name": "Ara Adım - Bilgilendirme",
-      "status": "passed",
-      "start_time": "03/02/2026 08:56:42",
-      "actual_duration": 5,
+      "status": "in_progress",
+      "start_time": "03/02/2026 09:25:58",
+      "actual_duration": null,
       "result_value": null,
-      "comment": "",
+      "comment": null,
       "time_limit": 10,
-      "completed_by": "Sistem Yöneticisi",
+      "completed_by": null,
       "input_validation": {}
     },
     {
       "step_id": 3,
       "name": "Voltaj Ölçümü",
-      "status": "failed",
-      "start_time": "03/02/2026 08:56:48",
-      "actual_duration": 1320,
-      "result_value": "3",
-      "comment": "",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
       "time_limit": 120,
-      "completed_by": "Mehmet Demir",
+      "completed_by": null,
       "input_validation": {
         "min": 11.5,
         "max": 12.5
       }
     }
   ],
-  "last_updated": "2026-02-03T09:18:49.268990",
+  "last_updated": "2026-02-03T09:26:33.659225",
   "file_version": "1.0"
 }
 ```
@@ -1115,16 +1283,26 @@ __all__ = ['ExcelExporter']
 # exporters\excel_exporter.py
 
 ```py
+# -*- coding: utf-8 -*-
+
 """
 Excel Exporter
-Exports test results to formatted Excel files
+Exports test session data to formatted Excel files.
+
+Updated to include extended session metadata:
+- Ürün Bilgileri (Product Info)
+- Yazılım Bilgileri (Software Info)
+- Cihaz Kalibrasyonları (Device Calibrations)
+- Oturum Bilgileri (Session Info)
+
+NOTE: İstasyon and SİP are NOT included in Excel (UI-only fields)
 """
-from typing import Optional, List
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
 from models.test_session import TestSession
@@ -1140,20 +1318,27 @@ class ExcelExporter:
     Exports test session data to formatted Excel files.
     
     Features:
-    - Session metadata (stock number, serial, station, SIP)
+    - Extended session metadata (product, software, calibrations)
     - Step-by-step results with status, duration, and comments
     - Color-coded pass/fail status
     - Professional formatting
     - Auto-column sizing
+    
+    NOTE: İstasyon and SİP are UI-only fields and NOT included in Excel export.
     """
     
     # Excel styling constants
     HEADER_FILL = PatternFill(start_color="1a237e", end_color="1a237e", fill_type="solid")
     HEADER_FONT = Font(color="FFFFFF", bold=True, size=12)
     
+    SECTION_FILL = PatternFill(start_color="3949ab", end_color="3949ab", fill_type="solid")
+    SECTION_FONT = Font(color="FFFFFF", bold=True, size=11)
+    
     PASS_FILL = PatternFill(start_color="C8E6C9", end_color="C8E6C9", fill_type="solid")
     FAIL_FILL = PatternFill(start_color="FFCDD2", end_color="FFCDD2", fill_type="solid")
     NA_FILL = PatternFill(start_color="E0E0E0", end_color="E0E0E0", fill_type="solid")
+    WARNING_FILL = PatternFill(start_color="FFF3E0", end_color="FFF3E0", fill_type="solid")
+    EXPIRED_FILL = PatternFill(start_color="FFCDD2", end_color="FFCDD2", fill_type="solid")
     
     BORDER_THIN = Border(
         left=Side(style='thin'),
@@ -1164,7 +1349,7 @@ class ExcelExporter:
     
     def __init__(self):
         """Initialize the Excel exporter"""
-        logger.info("ExcelExporter initialized")
+        logger.info("ExcelExporter initialized (with extended metadata support)")
     
     def export_session(self, session: TestSession, output_path: str) -> bool:
         """
@@ -1204,14 +1389,25 @@ class ExcelExporter:
     
     def _write_header_section(self, ws, session: TestSession, start_row: int) -> int:
         """
-        Write session metadata header section.
+        Write session metadata header section with extended information.
+        
+        Includes:
+        - Report Title
+        - Ürün Bilgileri (Product Info)
+        - Yazılım Bilgileri (Software Info)
+        - Cihaz Kalibrasyonları (Device Calibrations)
+        - Oturum Bilgileri (Session Timing)
+        
+        NOTE: İstasyon and SİP are NOT included (UI-only fields)
         
         Returns:
             Next available row number
         """
         row = start_row
         
-        # Title
+        # =====================================================================
+        # Report Title
+        # =====================================================================
         ws.merge_cells(f'A{row}:G{row}')
         cell = ws[f'A{row}']
         cell.value = "TEST PROSEDÜRÜ RAPORU"
@@ -1219,27 +1415,162 @@ class ExcelExporter:
         cell.alignment = Alignment(horizontal='center', vertical='center')
         row += 2
         
-        # Session info
-        info_data = [
-            ("STOK NO:", session.stock_number),
-            ("SERİ NO:", session.serial_number),
-            ("İSTASYON:", session.station_number),
-            ("SİP KODU:", session.sip_code),
-            ("BAŞLANGIÇ:", session.start_time.strftime(config.DATETIME_FORMAT) if session.start_time else "---"),
-            ("BİTİŞ:", session.end_time.strftime(config.DATETIME_FORMAT) if session.end_time else "Devam Ediyor"),
-            ("SÜRE:", f"{session.duration_seconds // 60} dakika {session.duration_seconds % 60} saniye"),
-            ("TAMAMLANMA:", f"%{session.get_completion_percentage():.0f}"),
-            ("BAŞARILI:", str(session.get_passed_count())),
-            ("BAŞARISIZ:", str(session.get_failed_count())),
+        # Check if extended metadata is available
+        metadata = session.metadata if hasattr(session, 'metadata') and session.metadata else None
+        
+        # =====================================================================
+        # ÜRÜN BİLGİLERİ (Product Information)
+        # =====================================================================
+        row = self._write_section_header(ws, row, "ÜRÜN BİLGİLERİ")
+        
+        if metadata:
+            product_data = [
+                ("Stok No:", metadata.stok_no or session.stock_number),
+                ("Opsiyonel Stok No:", metadata.opsiyonel_stok_no),
+                ("Tanım:", metadata.tanim),
+                ("TEU UDK:", metadata.teu_udk),
+                ("Seri No:", metadata.seri_no or session.serial_number),
+                ("261 Revizyonu:", metadata.revizyon_261),
+                ("Test Donanımı Revizyon:", metadata.test_donanimi_revizyon),
+                ("Test Yazılımı Revizyon:", metadata.test_yazilimi_revizyon),
+                ("İş Tipi No:", metadata.is_tipi_no),
+            ]
+        else:
+            # Fallback to basic session info
+            product_data = [
+                ("Stok No:", session.stock_number),
+                ("Seri No:", session.serial_number),
+            ]
+        
+        for label, value in product_data:
+            if value:  # Only write non-empty values
+                row = self._write_info_row(ws, row, label, value)
+        
+        row += 1  # Spacing
+        
+        # =====================================================================
+        # YAZILIM BİLGİLERİ (Software Information)
+        # =====================================================================
+        if metadata and (metadata.kay_yazilimi_versiyon or metadata.sky_yazilimi_versiyon):
+            row = self._write_section_header(ws, row, "YAZILIM BİLGİLERİ")
+            
+            software_data = [
+                ("KAY Yazılımı Versiyon:", metadata.kay_yazilimi_versiyon),
+                ("SKY Yazılımı Versiyon:", metadata.sky_yazilimi_versiyon),
+            ]
+            
+            for label, value in software_data:
+                if value:
+                    row = self._write_info_row(ws, row, label, value)
+            
+            row += 1  # Spacing
+        
+        # =====================================================================
+        # CİHAZ KALİBRASYONLARI (Device Calibrations)
+        # =====================================================================
+        if metadata:
+            calibration_data = [
+                ("FLUKE ESA620:", metadata.fluke_esa620_kalibrasyon, 'fluke_esa620_kalibrasyon'),
+                ("ITALSEA 7PROGLCD:", metadata.italsea_7proglcd_kalibrasyon, 'italsea_7proglcd_kalibrasyon'),
+                ("Geratech:", metadata.geratech_kalibrasyon, 'geratech_kalibrasyon'),
+                ("IBA MagicMax:", metadata.iba_magicmax_kalibrasyon, 'iba_magicmax_kalibrasyon'),
+                ("IBA Primus A:", metadata.iba_primus_a_kalibrasyon, 'iba_primus_a_kalibrasyon'),
+            ]
+            
+            # Check if any calibration data exists
+            has_calibrations = any(date_val for _, date_val, _ in calibration_data)
+            
+            if has_calibrations:
+                row = self._write_section_header(ws, row, "CİHAZ KALİBRASYONLARI")
+                
+                for label, date_val, field_name in calibration_data:
+                    if date_val:
+                        # Format date for display
+                        formatted_date = metadata.format_date_for_display(field_name)
+                        status = metadata.get_calibration_status(field_name)
+                        row = self._write_calibration_row(ws, row, label, formatted_date, status)
+                
+                row += 1  # Spacing
+        
+        # =====================================================================
+        # OTURUM BİLGİLERİ (Session Timing) - Generic timing, NO İstasyon/SİP
+        # =====================================================================
+        row = self._write_section_header(ws, row, "OTURUM BİLGİLERİ")
+        
+        # Calculate duration text
+        if session.duration_seconds:
+            minutes = session.duration_seconds // 60
+            seconds = session.duration_seconds % 60
+            duration_text = f"{minutes} dakika {seconds} saniye"
+        else:
+            duration_text = "---"
+        
+        session_data = [
+            ("Başlangıç:", session.start_time.strftime(config.DATETIME_FORMAT) if session.start_time else "---"),
+            ("Bitiş:", session.end_time.strftime(config.DATETIME_FORMAT) if session.end_time else "Devam Ediyor"),
+            ("Süre:", duration_text),
+            ("Tamamlanma:", f"%{session.get_completion_percentage():.0f}"),
+            ("Başarılı:", str(session.get_passed_count())),
+            ("Başarısız:", str(session.get_failed_count())),
         ]
         
-        for label, value in info_data:
-            ws[f'A{row}'] = label
-            ws[f'A{row}'].font = Font(bold=True)
-            ws[f'B{row}'] = value
-            row += 1
+        for label, value in session_data:
+            row = self._write_info_row(ws, row, label, value)
         
         return row
+    
+    def _write_section_header(self, ws, row: int, title: str) -> int:
+        """Write a section header row"""
+        ws.merge_cells(f'A{row}:G{row}')
+        cell = ws[f'A{row}']
+        cell.value = title
+        cell.font = self.SECTION_FONT
+        cell.fill = self.SECTION_FILL
+        cell.alignment = Alignment(horizontal='left', vertical='center')
+        cell.border = self.BORDER_THIN
+        return row + 1
+    
+    def _write_info_row(self, ws, row: int, label: str, value: str) -> int:
+        """Write a label-value info row"""
+        ws[f'A{row}'] = label
+        ws[f'A{row}'].font = Font(bold=True)
+        ws[f'A{row}'].border = self.BORDER_THIN
+        
+        ws.merge_cells(f'B{row}:G{row}')
+        ws[f'B{row}'] = value
+        ws[f'B{row}'].border = self.BORDER_THIN
+        
+        return row + 1
+    
+    def _write_calibration_row(self, ws, row: int, label: str, date_value: str, status: str) -> int:
+        """Write a calibration row with status-based coloring"""
+        ws[f'A{row}'] = label
+        ws[f'A{row}'].font = Font(bold=True)
+        ws[f'A{row}'].border = self.BORDER_THIN
+        
+        ws.merge_cells(f'B{row}:F{row}')
+        ws[f'B{row}'] = date_value
+        ws[f'B{row}'].border = self.BORDER_THIN
+        
+        # Status indicator with color
+        status_cell = ws[f'G{row}']
+        if status == 'expired':
+            status_cell.value = "SÜRESİ DOLMUŞ"
+            status_cell.fill = self.EXPIRED_FILL
+            status_cell.font = Font(color="B71C1C", bold=True)
+        elif status == 'warning':
+            status_cell.value = "YAKINDA DOLACAK"
+            status_cell.fill = self.WARNING_FILL
+            status_cell.font = Font(color="E65100", bold=True)
+        else:
+            status_cell.value = "GEÇERLİ"
+            status_cell.fill = self.PASS_FILL
+            status_cell.font = Font(color="1B5E20", bold=True)
+        
+        status_cell.border = self.BORDER_THIN
+        status_cell.alignment = Alignment(horizontal='center')
+        
+        return row + 1
     
     def _write_results_table(self, ws, session: TestSession, start_row: int) -> int:
         """
@@ -1250,7 +1581,10 @@ class ExcelExporter:
         """
         row = start_row
         
-        # Table headers
+        # Table header
+        row = self._write_section_header(ws, row, "TEST SONUÇLARI")
+        
+        # Table column headers
         headers = [
             "Adım No",
             "Adım Adı",
@@ -1341,10 +1675,10 @@ class ExcelExporter:
             return ("BAŞARILI", self.PASS_FILL)
         elif status == TestStatus.FAILED:
             return ("BAŞARISIZ", self.FAIL_FILL)
-        elif status == TestStatus.NOT_APPLICABLE:
-            return ("UYGULANMAZ", self.NA_FILL)
         elif status == TestStatus.IN_PROGRESS:
             return ("DEVAM EDİYOR", PatternFill(start_color="FFF9C4", end_color="FFF9C4", fill_type="solid"))
+        elif status == TestStatus.SKIPPED:
+            return ("ATLANDI", self.NA_FILL)
         else:
             return ("BAŞLANMAMIŞ", self.NA_FILL)
     
@@ -1380,7 +1714,7 @@ class ExcelExporter:
         """
         Generate Excel filename based on session data.
         
-        Format: TestRaporu_<STATION>_<DATE>_<STOCK>.xlsx
+        Format: TestRaporu_<DATE>_<STOCK>_<SERIAL>.xlsx
         
         Args:
             session: TestSession object
@@ -1391,14 +1725,16 @@ class ExcelExporter:
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         stock = self._sanitize_filename(session.stock_number)
-        station = self._sanitize_filename(session.station_number)
+        serial = self._sanitize_filename(session.serial_number)
         
-        filename = f"TestRaporu_{station}_{timestamp}_{stock}.xlsx"
+        filename = f"TestRaporu_{timestamp}_{stock}_{serial}.xlsx"
         
         return str(Path(output_dir) / filename)
     
     def _sanitize_filename(self, name: str) -> str:
         """Remove invalid characters from filename"""
+        if not name:
+            return "unknown"
         # Keep only alphanumeric, hyphens, and underscores
         return ''.join(c if c.isalnum() or c in '-_' else '_' for c in name)
 ```
@@ -1419,6 +1755,67 @@ This is a binary file of the type: Excel Spreadsheet
 
 This is a binary file of the type: Excel Spreadsheet
 
+# generate_codebase.bat
+
+```bat
+@echo off
+echo ================================================
+echo AI Digest - Codebase Documentation Generator
+echo ================================================
+echo.
+
+REM Check if Node.js is installed
+where node >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Node.js is not installed!
+    echo Please install Node.js from https://nodejs.org/
+    echo.
+    pause
+    exit /b 1
+)
+
+REM Check if npx is available
+where npx >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: npx is not available!
+    echo Please make sure Node.js is properly installed.
+    echo.
+    pause
+    exit /b 1
+)
+
+echo Node.js found: 
+node --version
+echo.
+
+echo Running ai-digest to generate codebase.md...
+echo.
+
+REM Run ai-digest
+npx ai-digest
+
+if %ERRORLEVEL% EQU 0 (
+    echo.
+    echo ================================================
+    echo SUCCESS! codebase.md has been generated.
+    echo ================================================
+    echo.
+    echo You can now find the codebase.md file in your project directory.
+    echo.
+) else (
+    echo.
+    echo ================================================
+    echo ERROR: Failed to generate codebase.md
+    echo ================================================
+    echo.
+    echo Please check the error messages above.
+    echo.
+)
+
+pause
+
+```
+
 # main.py
 
 ```py
@@ -1426,19 +1823,27 @@ This is a binary file of the type: Excel Spreadsheet
 
 """
 Test Procedure UI - Main Entry Point
-UPDATED: Added user authentication system
-Phase 1: Simple 2-step demo with Modern UI
-FIXED: Correct path resolution for EXE distribution
+
+Flow:
+1. LoginDialog - User authentication (operator/admin selection)
+2. TestSessionSetupDialog - Collect test session metadata (NEW)
+3. MainWindow - Test execution
+
+Features:
+- User authentication (3-role system)
+- Extended session metadata entry with memory
+- Dark theme UI
 """
 import sys
 import os
 from pathlib import Path
-from PyQt5.QtWidgets import QApplication, QDialog
-from qt_material import apply_stylesheet
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox
 from ui.main_window import MainWindow
 from utils.logger import setup_logger
 from utils.auth_manager import AuthManager
+from utils.settings_manager import SettingsManager
 from ui.dialogs.login_dialog import LoginDialog
+from ui.dialogs.test_session_setup_dialog import TestSessionSetupDialog
 import config
 import qdarkstyle
 
@@ -1468,7 +1873,7 @@ def get_application_path():
 def main():
     """Main application entry point"""
     logger.info("=" * 60)
-    logger.info("Test Procedure Application Starting (with Authentication)")
+    logger.info("Test Procedure Application Starting")
     logger.info("=" * 60)
     
     # Get application base path
@@ -1480,11 +1885,14 @@ def main():
     app.setApplicationName(config.WINDOW_TITLE)
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
     
-    # ========================================================================
-    # NEW: User Authentication
-    # ========================================================================
-    logger.info("Showing login dialog...")
+    # Initialize managers
     auth_manager = AuthManager()
+    settings_manager = SettingsManager()
+    
+    # ========================================================================
+    # STEP 1: User Authentication
+    # ========================================================================
+    logger.info("Step 1: Showing login dialog...")
     login_dialog = LoginDialog(auth_manager)
     
     if login_dialog.exec_() != QDialog.Accepted:
@@ -1497,9 +1905,37 @@ def main():
     logger.info(f"User authenticated: {user_name} (Role: {user_role})")
     
     # ========================================================================
-    # Create main window (with auth manager)
+    # STEP 2: Test Session Setup (NEW - Collect Metadata)
     # ========================================================================
+    logger.info("Step 2: Showing test session setup dialog...")
+    setup_dialog = TestSessionSetupDialog(settings_manager)
+    
+    if setup_dialog.exec_() != QDialog.Accepted:
+        logger.info("Session setup cancelled by user - exiting application")
+        sys.exit(0)
+    
+    # Get the metadata from the dialog
+    session_metadata = setup_dialog.get_metadata()
+    logger.info(f"Session metadata collected: {session_metadata}")
+    
+    # Create test_info dict for backwards compatibility with MainWindow
+    test_info = {
+        'stock_number': session_metadata.stok_no,
+        'serial_number': session_metadata.seri_no,
+        'station_number': session_metadata.istasyon,
+        'sip_code': session_metadata.sip_code
+    }
+    
+    # ========================================================================
+    # STEP 3: Create Main Window
+    # ========================================================================
+    logger.info("Step 3: Creating main window...")
     window = MainWindow(auth_manager=auth_manager)
+    
+    # Pass the full metadata to the window (for Excel export)
+    if hasattr(window, 'test_manager') and window.test_manager:
+        # Store metadata in test_manager for later use
+        window.test_manager.session_metadata = session_metadata
     
     # Update window title based on user role
     if auth_manager.is_admin():
@@ -1510,29 +1946,27 @@ def main():
         logger.info("Operator mode - sequential navigation only")
     
     # ========================================================================
-    # Load test procedure
+    # STEP 4: Load Test Procedure
     # ========================================================================
-    # Test info - in real application, this would come from user input or database
-    test_info = {
-        'stock_number': 'ABC123',
-        'serial_number': '456789',
-        'station_number': 'ST-01',
-        'sip_code': 'X99'
-    }
-    
-    # Load test procedure - USE ABSOLUTE PATH
     test_file = app_path / 'data' / 'sample_test.json'
     logger.info(f"Loading test file: {test_file}")
     
     if not test_file.exists():
         logger.error(f"Test file not found: {test_file}")
-        logger.error(f"Current working directory: {os.getcwd()}")
-        logger.error(f"Application path: {app_path}")
-        logger.error(f"Contents of app path: {list(app_path.iterdir())}")
+        QMessageBox.critical(
+            None, 
+            "Hata", 
+            f"Test dosyası bulunamadı:\n{test_file}"
+        )
         sys.exit(1)
     
     if window.load_test_procedure(str(test_file), test_info):
         logger.info(f"Loaded test procedure: {test_file}")
+        
+        # Attach metadata to the session after loading
+        if window.test_manager and window.test_manager.session:
+            window.test_manager.session.metadata = session_metadata
+            logger.info("Session metadata attached to test session")
         
         # Start the test
         window.start_test()
@@ -1544,6 +1978,11 @@ def main():
         logger.info("Use 'Dosya > Güncelleme Ayarları...' to configure data output")
     else:
         logger.error("Failed to load test procedure. Exiting.")
+        QMessageBox.critical(
+            None,
+            "Hata",
+            "Test prosedürü yüklenemedi. Uygulama kapatılıyor."
+        )
         sys.exit(1)
     
     # Run application event loop
@@ -2440,11 +2879,24 @@ class TimerManager(QObject):
 # models\__init__.py
 
 ```py
-from models.enums import TestStatus, InputType, TimerStatus
+"""
+Models Package
+Data structures for test procedure application
+"""
+from models.enums import TestStatus, InputType, TimerStatus, NavigationMode
 from models.test_step import TestStep
 from models.test_session import TestSession
+from models.session_metadata import SessionMetadata
 
-__all__ = ['TestStatus', 'InputType', 'TimerStatus', 'TestStep', 'TestSession']
+__all__ = [
+    'TestStatus', 
+    'InputType', 
+    'TimerStatus', 
+    'NavigationMode',
+    'TestStep', 
+    'TestSession',
+    'SessionMetadata'
+]
 ```
 
 # models\enums.py
@@ -2492,17 +2944,215 @@ class NavigationMode(Enum):
     RESUME = "resume"          # Resume paused step (future)
 ```
 
+# models\session_metadata.py
+
+```py
+# -*- coding: utf-8 -*-
+
+# -*- coding: utf-8 -*-
+
+"""
+Session Metadata Data Model
+Contains all test session setup information entered at login
+
+Fields are organized into 3 categories:
+1. Ürün Bilgileri (Product Information) - goes to Excel report
+2. Yazılım Bilgileri (Software Information) - goes to Excel report
+3. Cihaz Kalibrasyonları (Device Calibrations) - goes to Excel report
+4. Oturum Bilgileri (Session Info) - İstasyon and SİP for UI only, NOT in Excel
+"""
+from dataclasses import dataclass, field, asdict
+from typing import Optional, Dict, Any
+from datetime import date, datetime
+
+
+@dataclass
+class SessionMetadata:
+    """
+    Complete test session metadata.
+    
+    All fields have defaults for easy initialization.
+    Calibration dates are stored as date objects for easy comparison.
+    """
+    
+    # =========================================================================
+    # ÜRÜN BİLGİLERİ (Product Information) - Goes to Excel Report
+    # =========================================================================
+    stok_no: str = ""
+    opsiyonel_stok_no: str = ""
+    tanim: str = ""  # Tanım (Description)
+    teu_udk: str = ""
+    seri_no: str = ""
+    revizyon_261: str = ""  # 261 revizyonu
+    test_donanimi_revizyon: str = ""  # Test Donanımı Revizyon
+    test_yazilimi_revizyon: str = ""  # Test Yazılımı Revizyonu
+    is_tipi_no: str = ""  # İş Tipi No
+    
+    # =========================================================================
+    # YAZILIM BİLGİLERİ (Software Information) - Goes to Excel Report
+    # =========================================================================
+    kay_yazilimi_versiyon: str = ""  # KAY Yazılımı Versiyon No
+    sky_yazilimi_versiyon: str = ""  # SKY Yazılımı Versiyon No
+    
+    # =========================================================================
+    # CİHAZ KALİBRASYONLARI (Device Calibrations) - Goes to Excel Report
+    # Stored as ISO date strings (YYYY-MM-DD) for JSON serialization
+    # =========================================================================
+    fluke_esa620_kalibrasyon: str = ""  # FLUKE ESA620 kalibrasyon bitiş tarihi
+    italsea_7proglcd_kalibrasyon: str = ""  # ITALSEA 7PROGLCD kalibrasyon bitiş tarihi
+    geratech_kalibrasyon: str = ""  # Geratech kalibrasyon bitiş tarihi
+    iba_magicmax_kalibrasyon: str = ""  # IBA MagicMax kalibrasyon bitiş tarihi
+    iba_primus_a_kalibrasyon: str = ""  # IBA Primus A kalibrasyon bitiş tarihi
+    
+    # =========================================================================
+    # OTURUM BİLGİLERİ (Session Info) - UI Header ONLY, NOT in Excel Report
+    # =========================================================================
+    istasyon: str = ""  # İstasyon (Station) - for UI header only
+    sip_code: str = ""  # SİP Kodu - for UI header only
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert to dictionary for JSON serialization.
+        
+        Returns:
+            Dictionary with all fields
+        """
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'SessionMetadata':
+        """
+        Create SessionMetadata from dictionary.
+        
+        Args:
+            data: Dictionary with metadata fields
+            
+        Returns:
+            SessionMetadata instance
+        """
+        # Filter only known fields to avoid TypeError
+        known_fields = {
+            'stok_no', 'opsiyonel_stok_no', 'tanim', 'teu_udk', 'seri_no',
+            'revizyon_261', 'test_donanimi_revizyon', 'test_yazilimi_revizyon',
+            'is_tipi_no', 'kay_yazilimi_versiyon', 'sky_yazilimi_versiyon',
+            'fluke_esa620_kalibrasyon', 'italsea_7proglcd_kalibrasyon',
+            'geratech_kalibrasyon', 'iba_magicmax_kalibrasyon',
+            'iba_primus_a_kalibrasyon', 'istasyon', 'sip_code'
+        }
+        filtered_data = {k: v for k, v in data.items() if k in known_fields}
+        return cls(**filtered_data)
+    
+    def get_excel_data(self) -> Dict[str, Any]:
+        """
+        Get only the fields that should appear in Excel report.
+        Excludes İstasyon and SİP (UI-only fields).
+        
+        Returns:
+            Dictionary with Excel-exportable fields
+        """
+        data = self.to_dict()
+        # Remove UI-only fields
+        data.pop('istasyon', None)
+        data.pop('sip_code', None)
+        return data
+    
+    def get_calibration_status(self, field_name: str) -> str:
+        """
+        Check calibration date status.
+        
+        Args:
+            field_name: Name of calibration field
+            
+        Returns:
+            'valid' (>30 days), 'warning' (<=30 days), 'expired', or 'empty'
+        """
+        date_str = getattr(self, field_name, "")
+        if not date_str:
+            return 'empty'
+        
+        try:
+            cal_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            today = date.today()
+            days_remaining = (cal_date - today).days
+            
+            if days_remaining < 0:
+                return 'expired'
+            elif days_remaining <= 30:
+                return 'warning'
+            else:
+                return 'valid'
+        except ValueError:
+            return 'empty'
+    
+    def get_all_calibration_statuses(self) -> Dict[str, str]:
+        """
+        Get status of all calibration dates.
+        
+        Returns:
+            Dictionary mapping field name to status
+        """
+        calibration_fields = [
+            'fluke_esa620_kalibrasyon',
+            'italsea_7proglcd_kalibrasyon',
+            'geratech_kalibrasyon',
+            'iba_magicmax_kalibrasyon',
+            'iba_primus_a_kalibrasyon'
+        ]
+        return {field: self.get_calibration_status(field) for field in calibration_fields}
+    
+    def has_expired_calibrations(self) -> bool:
+        """
+        Check if any calibration is expired.
+        
+        Returns:
+            True if any calibration is expired
+        """
+        statuses = self.get_all_calibration_statuses()
+        return 'expired' in statuses.values()
+    
+    def format_date_for_display(self, field_name: str) -> str:
+        """
+        Format a date field for display (DD/MM/YYYY).
+        
+        Args:
+            field_name: Name of date field
+            
+        Returns:
+            Formatted date string or empty string
+        """
+        date_str = getattr(self, field_name, "")
+        if not date_str:
+            return ""
+        
+        try:
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+            return dt.strftime("%d/%m/%Y")
+        except ValueError:
+            return date_str
+    
+    def __repr__(self) -> str:
+        return (f"SessionMetadata(stok_no={self.stok_no}, "
+                f"seri_no={self.seri_no}, "
+                f"istasyon={self.istasyon})")
+```
+
 # models\test_session.py
 
 ```py
 """
 TestSession Data Model
 Represents a complete test session with all steps and metadata
+
+Updated to include extended SessionMetadata for:
+- Product information
+- Software versions
+- Device calibrations
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from models.test_step import TestStep
 from models.enums import TestStatus
+from models.session_metadata import SessionMetadata
 
 
 class TestSession:
@@ -2513,13 +3163,14 @@ class TestSession:
     
     Attributes:
         session_id: Unique identifier for this session
-        stock_number: Product stock number
-        serial_number: Product serial number
-        station_number: Test station identifier
-        sip_code: SIP code
+        stock_number: Product stock number (from metadata.stok_no)
+        serial_number: Product serial number (from metadata.seri_no)
+        station_number: Test station identifier (from metadata.istasyon)
+        sip_code: SIP code (from metadata.sip_code)
         start_time: Session start timestamp
         end_time: Session end timestamp (None if in progress)
         steps: List of TestStep objects
+        metadata: Extended session metadata (NEW)
     """
     
     def __init__(
@@ -2527,13 +3178,24 @@ class TestSession:
         stock_number: str = "",
         serial_number: str = "",
         station_number: str = "",
-        sip_code: str = ""
+        sip_code: str = "",
+        metadata: Optional[SessionMetadata] = None
     ):
         self.session_id = self._generate_session_id()
-        self.stock_number = stock_number
-        self.serial_number = serial_number
-        self.station_number = station_number
-        self.sip_code = sip_code
+        
+        # If metadata provided, use it; otherwise use direct parameters
+        if metadata:
+            self.metadata = metadata
+            self.stock_number = metadata.stok_no
+            self.serial_number = metadata.seri_no
+            self.station_number = metadata.istasyon
+            self.sip_code = metadata.sip_code
+        else:
+            self.metadata = None
+            self.stock_number = stock_number
+            self.serial_number = serial_number
+            self.station_number = station_number
+            self.sip_code = sip_code
         
         self.start_time: Optional[datetime] = None
         self.end_time: Optional[datetime] = None
@@ -2592,7 +3254,7 @@ class TestSession:
         Returns:
             Dictionary representation of session
         """
-        return {
+        data = {
             'session_id': self.session_id,
             'stock_number': self.stock_number,
             'serial_number': self.serial_number,
@@ -2606,6 +3268,43 @@ class TestSession:
             'failed_count': self.get_failed_count(),
             'steps': [step.to_dict() for step in self.steps]
         }
+        
+        # Include metadata if available
+        if self.metadata:
+            data['metadata'] = self.metadata.to_dict()
+        
+        return data
+    
+    def to_dict_for_excel(self) -> Dict[str, Any]:
+        """
+        Convert session to dictionary for Excel export.
+        Excludes UI-only fields (istasyon, sip_code).
+        
+        Returns:
+            Dictionary with Excel-exportable fields
+        """
+        data = {
+            'session_id': self.session_id,
+            'start_time': self.start_time.isoformat() if self.start_time else None,
+            'end_time': self.end_time.isoformat() if self.end_time else None,
+            'duration_seconds': self.duration_seconds,
+            'completion_percentage': self.get_completion_percentage(),
+            'passed_count': self.get_passed_count(),
+            'failed_count': self.get_failed_count(),
+            'steps': [step.to_dict() for step in self.steps]
+        }
+        
+        # Include metadata for Excel (without UI-only fields)
+        if self.metadata:
+            data['metadata'] = self.metadata.get_excel_data()
+        else:
+            # Fallback to basic stock/serial if no metadata
+            data['metadata'] = {
+                'stok_no': self.stock_number,
+                'seri_no': self.serial_number
+            }
+        
+        return data
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'TestSession':
@@ -2618,11 +3317,17 @@ class TestSession:
         Returns:
             TestSession instance
         """
+        # Check for metadata
+        metadata = None
+        if 'metadata' in data and data['metadata']:
+            metadata = SessionMetadata.from_dict(data['metadata'])
+        
         session = cls(
             stock_number=data.get('stock_number', ''),
             serial_number=data.get('serial_number', ''),
             station_number=data.get('station_number', ''),
-            sip_code=data.get('sip_code', '')
+            sip_code=data.get('sip_code', ''),
+            metadata=metadata
         )
         
         session.session_id = data.get('session_id', session.session_id)
@@ -3065,7 +3770,7 @@ class ContinuousWriter:
 # readme.txt
 
 ```txt
-
+npx ai-digest to codebase.md
 ```
 
 # requirements.txt
@@ -3097,6 +3802,14 @@ pyinstaller==6.3.0
 # Pillow==10.1.0  # If you need to create/convert icons
 
 ```
+
+# resources\icons\happy.png
+
+This is a binary file of the type: Image
+
+# resources\icons\sad.png
+
+This is a binary file of the type: Image
 
 # resources\images\step_001.png
 
@@ -3238,13 +3951,18 @@ User interface components
 """
 Dialogs Package
 Dialog windows for the application
-
-Location: ui/dialogs/__init__.py
 """
 from ui.dialogs.update_settings_dialog import UpdateSettingsDialog
 from ui.dialogs.switch_user_dialog import SwitchUserDialog
+from ui.dialogs.test_session_setup_dialog import TestSessionSetupDialog
+from ui.dialogs.test_step_editor_dialog import TestStepEditorDialog
 
-__all__ = ['UpdateSettingsDialog', 'SwitchUserDialog']
+__all__ = [
+    'UpdateSettingsDialog', 
+    'SwitchUserDialog',
+    'TestSessionSetupDialog',
+    'TestStepEditorDialog'
+]
 ```
 
 # ui\dialogs\login_dialog.py
@@ -4076,6 +4794,1526 @@ class SwitchUserDialog(QDialog):
             self.password_input.setFocus()
 ```
 
+# ui\dialogs\test_session_setup_dialog.py
+
+```py
+# -*- coding: utf-8 -*-
+
+"""
+Test Session Setup Dialog
+Collects all test session metadata before starting a test.
+
+Features:
+- 4 sections: Product Info, Software Info, Device Calibrations, Session Info
+- Memory: Remembers last entered values from previous session
+- Validation: Required fields (Stok No, Seri No) and calibration date warnings
+- Calibration status indicators (green/yellow/red)
+"""
+from PyQt5.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QGridLayout,
+    QPushButton, QLabel, QLineEdit, QDateEdit, QMessageBox,
+    QGroupBox, QScrollArea, QWidget, QFrame, QSizePolicy
+)
+from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtGui import QFont
+from typing import Optional, Dict, Any
+from datetime import datetime, date
+
+import config
+from models.session_metadata import SessionMetadata
+from utils.logger import setup_logger
+
+logger = setup_logger(__name__)
+
+
+class TestSessionSetupDialog(QDialog):
+    """
+    Dialog for collecting test session metadata.
+    
+    Shows 4 sections:
+    1. Ürün Bilgileri (Product Info)
+    2. Yazılım Bilgileri (Software Info)
+    3. Cihaz Kalibrasyonları (Device Calibrations)
+    4. Oturum Bilgileri (Session Info - İstasyon, SİP)
+    
+    All values are pre-populated from last session (memory feature).
+    """
+    
+    def __init__(self, settings_manager, parent=None):
+        """
+        Initialize the dialog.
+        
+        Args:
+            settings_manager: SettingsManager instance for saving/loading defaults
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.settings_manager = settings_manager
+        self.metadata: Optional[SessionMetadata] = None
+        
+        # Input widgets storage
+        self.inputs: Dict[str, QWidget] = {}
+        
+        self.setWindowTitle("Test Oturumu Başlat")
+        self.setMinimumSize(1100, 900)
+        self.setModal(True)
+        
+        self._init_ui()
+        self._load_defaults()
+        
+        logger.info("TestSessionSetupDialog initialized")
+    
+    def _init_ui(self):
+        """Initialize the UI components"""
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Header
+        header = QLabel("🔧 Test Oturumu Bilgileri")
+        header.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE_LARGE + 4}pt;
+            font-weight: bold;
+            color: {config.Colors.TEXT_PRIMARY};
+            padding: 10px;
+        """)
+        header.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(header)
+        
+        # Scroll area for content
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(f"""
+            QScrollArea {{
+                border: none;
+                background-color: {config.Colors.BACKGROUND_PRIMARY};
+            }}
+        """)
+        
+        # Content widget
+        content = QWidget()
+        content_layout = QVBoxLayout()
+        content_layout.setSpacing(15)
+        
+        # Section 1: Ürün Bilgileri
+        content_layout.addWidget(self._create_product_section())
+        
+        # Section 2: Yazılım Bilgileri
+        content_layout.addWidget(self._create_software_section())
+        
+        # Section 3: Cihaz Kalibrasyonları
+        content_layout.addWidget(self._create_calibration_section())
+        
+        # Section 4: Oturum Bilgileri (İstasyon, SİP)
+        content_layout.addWidget(self._create_session_section())
+        
+        content_layout.addStretch()
+        content.setLayout(content_layout)
+        scroll.setWidget(content)
+        
+        main_layout.addWidget(scroll, 1)
+        
+        # Bottom buttons
+        main_layout.addWidget(self._create_button_section())
+        
+        self.setLayout(main_layout)
+        
+        # Set dark background
+        self.setStyleSheet(f"""
+            QDialog {{
+                background-color: {config.Colors.BACKGROUND_PRIMARY};
+            }}
+        """)
+    
+    def _create_group_box(self, title: str, icon: str = "") -> QGroupBox:
+        """Create a styled group box"""
+        group = QGroupBox(f"{icon} {title}" if icon else title)
+        group.setStyleSheet(f"""
+            QGroupBox {{
+                font-size: {config.FONT_SIZE + 1}pt;
+                font-weight: bold;
+                color: {config.Colors.TEXT_PRIMARY};
+                border: 2px solid {config.Colors.ACCENT_BLUE};
+                border-radius: 8px;
+                margin-top: 12px;
+                padding-top: 10px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 10px;
+            }}
+        """)
+        return group
+    
+    def _create_input_row(self, label_text: str, field_name: str, 
+                          placeholder: str = "") -> QHBoxLayout:
+        """Create a label + input row"""
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        
+        # Label
+        label = QLabel(f"{label_text}:")
+        label.setFixedWidth(200)
+        label.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE}pt;
+            color: {config.Colors.TEXT_PRIMARY};
+        """)
+        row.addWidget(label)
+        
+        # Input - Made larger with better padding for clearer text
+        input_field = QLineEdit()
+        input_field.setPlaceholderText(placeholder or f"{label_text} girin...")
+        input_field.setMinimumHeight(55)
+        input_field.setStyleSheet(f"""
+            QLineEdit {{
+                padding: 10px 12px;
+                font-size: {config.FONT_SIZE + 1}pt;
+                border: 2px solid {config.Colors.BORDER};
+                border-radius: 6px;
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+                color: {config.Colors.TEXT_PRIMARY};
+            }}
+            QLineEdit:focus {{
+                border: 2px solid {config.Colors.ACCENT_BLUE};
+            }}
+        """)
+        row.addWidget(input_field, 1)
+        
+        # Store reference
+        self.inputs[field_name] = input_field
+        
+        return row
+    
+    def _create_date_row(self, label_text: str, field_name: str) -> QHBoxLayout:
+        """Create a label + date picker row with status indicator"""
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        
+        # Label
+        label = QLabel(f"{label_text}:")
+        label.setFixedWidth(200)
+        label.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE}pt;
+            color: {config.Colors.TEXT_PRIMARY};
+        """)
+        row.addWidget(label)
+        
+        # Date picker - Made larger with better padding
+        date_edit = QDateEdit()
+        date_edit.setCalendarPopup(True)
+        date_edit.setDisplayFormat("dd/MM/yyyy")
+        date_edit.setMinimumHeight(55)
+        date_edit.setSpecialValueText("Tarih seçin...")  # Empty state text
+        date_edit.setStyleSheet(f"""
+            QDateEdit {{
+                padding: 10px 12px;
+                font-size: {config.FONT_SIZE + 1}pt;
+                border: 2px solid {config.Colors.BORDER};
+                border-radius: 6px;
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+                color: {config.Colors.TEXT_PRIMARY};
+            }}
+            QDateEdit:focus {{
+                border: 2px solid {config.Colors.ACCENT_BLUE};
+            }}
+            QDateEdit::drop-down {{
+                subcontrol-origin: padding;
+                subcontrol-position: right center;
+                width: 30px;
+                border-left: 1px solid {config.Colors.BORDER};
+            }}
+        """)
+        
+        # Connect to status update
+        date_edit.dateChanged.connect(lambda: self._update_date_status(field_name))
+        
+        row.addWidget(date_edit, 1)
+        
+        # Status indicator
+        status_label = QLabel("📅")
+        status_label.setFixedWidth(35)
+        status_label.setStyleSheet(f"font-size: 18pt;")
+        row.addWidget(status_label)
+        
+        # Store references
+        self.inputs[field_name] = date_edit
+        self.inputs[f"{field_name}_status"] = status_label
+        
+        return row
+    
+    def _update_date_status(self, field_name: str):
+        """Update the status indicator for a date field"""
+        date_edit = self.inputs.get(field_name)
+        status_label = self.inputs.get(f"{field_name}_status")
+        
+        if not date_edit or not status_label:
+            return
+        
+        selected_date = date_edit.date().toPyDate()
+        today = date.today()
+        
+        # Check if date is the minimum (empty/unset)
+        if date_edit.date() == date_edit.minimumDate():
+            status_label.setText("📅")
+            status_label.setToolTip("Tarih seçilmedi")
+            return
+        
+        days_remaining = (selected_date - today).days
+        
+        if days_remaining < 0:
+            status_label.setText("🔴")
+            status_label.setToolTip(f"SÜRESİ DOLMUŞ ({abs(days_remaining)} gün önce)")
+        elif days_remaining <= 30:
+            status_label.setText("🟡")
+            status_label.setToolTip(f"Yakında dolacak ({days_remaining} gün kaldı)")
+        else:
+            status_label.setText("🟢")
+            status_label.setToolTip(f"Geçerli ({days_remaining} gün kaldı)")
+    
+    def _create_product_section(self) -> QGroupBox:
+        """Create the Product Information section"""
+        group = self._create_group_box("ÜRÜN BİLGİLERİ", "📦")
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(15, 15, 15, 15)
+        
+        # Fields - no required constraints
+        layout.addLayout(self._create_input_row("Stok No", "stok_no"))
+        layout.addLayout(self._create_input_row("Opsiyonel Stok No", "opsiyonel_stok_no"))
+        layout.addLayout(self._create_input_row("Tanım", "tanim"))
+        layout.addLayout(self._create_input_row("TEU UDK", "teu_udk"))
+        layout.addLayout(self._create_input_row("Seri No", "seri_no"))
+        layout.addLayout(self._create_input_row("261 Revizyonu", "revizyon_261"))
+        layout.addLayout(self._create_input_row("Test Donanımı Revizyon", "test_donanimi_revizyon"))
+        layout.addLayout(self._create_input_row("Test Yazılımı Revizyon", "test_yazilimi_revizyon"))
+        layout.addLayout(self._create_input_row("İş Tipi No", "is_tipi_no"))
+        
+        group.setLayout(layout)
+        return group
+    
+    def _create_software_section(self) -> QGroupBox:
+        """Create the Software Information section"""
+        group = self._create_group_box("YAZILIM BİLGİLERİ", "💻")
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(15, 15, 15, 15)
+        
+        layout.addLayout(self._create_input_row("KAY Yazılımı Versiyon No", "kay_yazilimi_versiyon"))
+        layout.addLayout(self._create_input_row("SKY Yazılımı Versiyon No", "sky_yazilimi_versiyon"))
+        
+        group.setLayout(layout)
+        return group
+    
+    def _create_calibration_section(self) -> QGroupBox:
+        """Create the Device Calibration section"""
+        group = self._create_group_box("CİHAZ KALİBRASYONLARI", "🔧")
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(15, 15, 15, 15)
+        
+        # Info label
+        info = QLabel("Kalibrasyon bitiş tarihlerini girin (🟢 Geçerli | 🟡 30 gün kaldı | 🔴 Süresi dolmuş)")
+        info.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE - 1}pt;
+            color: {config.Colors.TEXT_SECONDARY};
+            padding: 5px;
+        """)
+        layout.addWidget(info)
+        
+        layout.addLayout(self._create_date_row("FLUKE ESA620", "fluke_esa620_kalibrasyon"))
+        layout.addLayout(self._create_date_row("ITALSEA 7PROGLCD", "italsea_7proglcd_kalibrasyon"))
+        layout.addLayout(self._create_date_row("Geratech", "geratech_kalibrasyon"))
+        layout.addLayout(self._create_date_row("IBA MagicMax", "iba_magicmax_kalibrasyon"))
+        layout.addLayout(self._create_date_row("IBA Primus A", "iba_primus_a_kalibrasyon"))
+        
+        group.setLayout(layout)
+        return group
+    
+    def _create_session_section(self) -> QGroupBox:
+        """Create the Session Info section (İstasyon, SİP - UI only)"""
+        group = self._create_group_box("OTURUM BİLGİLERİ", "🏭")
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(15, 15, 15, 15)
+        
+        # Info label
+        info = QLabel("Bu bilgiler sadece UI başlığında gösterilir, Excel raporuna yazılmaz.")
+        info.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE - 1}pt;
+            color: {config.Colors.TEXT_SECONDARY};
+            font-style: italic;
+            padding: 5px;
+        """)
+        layout.addWidget(info)
+        
+        layout.addLayout(self._create_input_row("İstasyon", "istasyon"))
+        layout.addLayout(self._create_input_row("SİP Kodu", "sip_code"))
+        
+        group.setLayout(layout)
+        return group
+    
+    def _create_button_section(self) -> QWidget:
+        """Create the bottom button section"""
+        widget = QWidget()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 15, 0, 0)
+        
+        layout.addStretch()
+        
+        # Clear button - same size as continue button
+        clear_btn = QPushButton("Temizle")
+        clear_btn.setFixedHeight(50)
+        clear_btn.setFixedWidth(200)
+        clear_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {config.Colors.BUTTON_SECONDARY};
+                color: white;
+                padding: 12px 25px;
+                font-size: {config.FONT_SIZE + 1}pt;
+                font-weight: bold;
+                border-radius: 6px;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: #8e8e8e;
+            }}
+        """)
+        clear_btn.clicked.connect(self._clear_fields)
+        layout.addWidget(clear_btn)
+        
+        layout.addSpacing(15)
+        
+        # Continue button - same size as clear button
+        continue_btn = QPushButton("Devam Et →")
+        continue_btn.setFixedHeight(50)
+        continue_btn.setFixedWidth(200)
+        continue_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {config.Colors.SUCCESS};
+                color: white;
+                padding: 12px 25px;
+                font-size: {config.FONT_SIZE + 1}pt;
+                font-weight: bold;
+                border-radius: 6px;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: #45a049;
+            }}
+            QPushButton:pressed {{
+                background-color: #3d8b40;
+            }}
+        """)
+        continue_btn.clicked.connect(self._on_continue)
+        layout.addWidget(continue_btn)
+        
+        widget.setLayout(layout)
+        return widget
+    
+    def _load_defaults(self):
+        """Load last session values from settings"""
+        saved_data = self.settings_manager.get_last_session_metadata()
+        
+        if not saved_data:
+            logger.info("No saved session metadata found, using empty defaults")
+            return
+        
+        logger.info("Loading saved session metadata as defaults")
+        
+        # Load text fields
+        text_fields = [
+            'stok_no', 'opsiyonel_stok_no', 'tanim', 'teu_udk', 'seri_no',
+            'revizyon_261', 'test_donanimi_revizyon', 'test_yazilimi_revizyon',
+            'is_tipi_no', 'kay_yazilimi_versiyon', 'sky_yazilimi_versiyon',
+            'istasyon', 'sip_code'
+        ]
+        
+        for field in text_fields:
+            if field in self.inputs and field in saved_data:
+                self.inputs[field].setText(saved_data.get(field, ""))
+        
+        # Load date fields
+        date_fields = [
+            'fluke_esa620_kalibrasyon', 'italsea_7proglcd_kalibrasyon',
+            'geratech_kalibrasyon', 'iba_magicmax_kalibrasyon',
+            'iba_primus_a_kalibrasyon'
+        ]
+        
+        for field in date_fields:
+            if field in self.inputs and field in saved_data:
+                date_str = saved_data.get(field, "")
+                if date_str:
+                    try:
+                        dt = datetime.strptime(date_str, "%Y-%m-%d")
+                        self.inputs[field].setDate(QDate(dt.year, dt.month, dt.day))
+                        self._update_date_status(field)
+                    except ValueError:
+                        pass
+    
+    def _save_to_settings(self):
+        """Save current values to settings for next session"""
+        data = {}
+        
+        # Save text fields
+        text_fields = [
+            'stok_no', 'opsiyonel_stok_no', 'tanim', 'teu_udk', 'seri_no',
+            'revizyon_261', 'test_donanimi_revizyon', 'test_yazilimi_revizyon',
+            'is_tipi_no', 'kay_yazilimi_versiyon', 'sky_yazilimi_versiyon',
+            'istasyon', 'sip_code'
+        ]
+        
+        for field in text_fields:
+            if field in self.inputs:
+                data[field] = self.inputs[field].text().strip()
+        
+        # Save date fields
+        date_fields = [
+            'fluke_esa620_kalibrasyon', 'italsea_7proglcd_kalibrasyon',
+            'geratech_kalibrasyon', 'iba_magicmax_kalibrasyon',
+            'iba_primus_a_kalibrasyon'
+        ]
+        
+        for field in date_fields:
+            if field in self.inputs:
+                date_edit = self.inputs[field]
+                if date_edit.date() != date_edit.minimumDate():
+                    data[field] = date_edit.date().toString("yyyy-MM-dd")
+                else:
+                    data[field] = ""
+        
+        self.settings_manager.set_last_session_metadata(data)
+        logger.info("Session metadata saved to settings")
+    
+    def _clear_fields(self):
+        """Clear all input fields"""
+        reply = QMessageBox.question(
+            self, 
+            "Alanları Temizle",
+            "Tüm alanlar temizlenecek. Emin misiniz?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            for name, widget in self.inputs.items():
+                if isinstance(widget, QLineEdit):
+                    widget.clear()
+                elif isinstance(widget, QDateEdit):
+                    widget.setDate(widget.minimumDate())
+            
+            logger.info("All fields cleared")
+    
+    def _validate_inputs(self) -> bool:
+        """
+        Validate inputs (optional - only check calibration warnings).
+        
+        Returns:
+            True if valid (or user accepts warnings), False otherwise
+        """
+        # Check for expired calibrations (warning only, not blocking)
+        expired_calibrations = []
+        date_fields = {
+            'fluke_esa620_kalibrasyon': 'FLUKE ESA620',
+            'italsea_7proglcd_kalibrasyon': 'ITALSEA 7PROGLCD',
+            'geratech_kalibrasyon': 'Geratech',
+            'iba_magicmax_kalibrasyon': 'IBA MagicMax',
+            'iba_primus_a_kalibrasyon': 'IBA Primus A'
+        }
+        
+        today = date.today()
+        for field, name in date_fields.items():
+            date_edit = self.inputs.get(field)
+            if date_edit and date_edit.date() != date_edit.minimumDate():
+                selected_date = date_edit.date().toPyDate()
+                if selected_date < today:
+                    expired_calibrations.append(name)
+        
+        if expired_calibrations:
+            reply = QMessageBox.warning(
+                self,
+                "⚠️ Süresi Dolmuş Kalibrasyon",
+                f"Aşağıdaki cihazların kalibrasyon süresi dolmuş:\n\n"
+                f"• {chr(10).join(expired_calibrations)}\n\n"
+                f"Yine de devam etmek istiyor musunuz?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply != QMessageBox.Yes:
+                return False
+        
+        return True
+    
+    def _on_continue(self):
+        """Handle continue button click"""
+        if not self._validate_inputs():
+            return
+        
+        # Create metadata object
+        self.metadata = SessionMetadata(
+            # Product info
+            stok_no=self.inputs['stok_no'].text().strip(),
+            opsiyonel_stok_no=self.inputs['opsiyonel_stok_no'].text().strip(),
+            tanim=self.inputs['tanim'].text().strip(),
+            teu_udk=self.inputs['teu_udk'].text().strip(),
+            seri_no=self.inputs['seri_no'].text().strip(),
+            revizyon_261=self.inputs['revizyon_261'].text().strip(),
+            test_donanimi_revizyon=self.inputs['test_donanimi_revizyon'].text().strip(),
+            test_yazilimi_revizyon=self.inputs['test_yazilimi_revizyon'].text().strip(),
+            is_tipi_no=self.inputs['is_tipi_no'].text().strip(),
+            
+            # Software info
+            kay_yazilimi_versiyon=self.inputs['kay_yazilimi_versiyon'].text().strip(),
+            sky_yazilimi_versiyon=self.inputs['sky_yazilimi_versiyon'].text().strip(),
+            
+            # Calibrations
+            fluke_esa620_kalibrasyon=self._get_date_value('fluke_esa620_kalibrasyon'),
+            italsea_7proglcd_kalibrasyon=self._get_date_value('italsea_7proglcd_kalibrasyon'),
+            geratech_kalibrasyon=self._get_date_value('geratech_kalibrasyon'),
+            iba_magicmax_kalibrasyon=self._get_date_value('iba_magicmax_kalibrasyon'),
+            iba_primus_a_kalibrasyon=self._get_date_value('iba_primus_a_kalibrasyon'),
+            
+            # Session info (UI only)
+            istasyon=self.inputs['istasyon'].text().strip(),
+            sip_code=self.inputs['sip_code'].text().strip()
+        )
+        
+        # Save to settings for next time
+        self._save_to_settings()
+        
+        logger.info(f"Session metadata created: {self.metadata}")
+        self.accept()
+    
+    def _get_date_value(self, field_name: str) -> str:
+        """Get date value as ISO string, or empty string if not set"""
+        date_edit = self.inputs.get(field_name)
+        if date_edit and date_edit.date() != date_edit.minimumDate():
+            return date_edit.date().toString("yyyy-MM-dd")
+        return ""
+    
+    def get_metadata(self) -> Optional[SessionMetadata]:
+        """
+        Get the entered metadata.
+        
+        Returns:
+            SessionMetadata object or None if dialog was cancelled
+        """
+        return self.metadata
+```
+
+# ui\dialogs\test_step_editor_dialog.py
+
+```py
+# -*- coding: utf-8 -*-
+
+"""
+Test Step Editor Dialog
+Allows developers to add, edit, and manage test steps via UI.
+
+Features:
+- Left panel: Scrollable list of test steps (number + name)
+- Right panel: Step details editor
+- Role-based permissions:
+  - DEVELOPER: Full access (add/edit/delete all fields)
+  - ADMIN: Can only edit time_limit field
+
+IMPORTANT: This dialog handles a bug in TestStep.to_dict() which doesn't include
+description, image_path, input_type, and input_label. We work around this by
+accessing the original TestStep objects directly.
+
+Location: ui/dialogs/test_step_editor_dialog.py
+"""
+from PyQt5.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QWidget, QLabel, 
+    QPushButton, QLineEdit, QTextEdit, QSpinBox, QComboBox,
+    QListWidget, QListWidgetItem, QGroupBox, QScrollArea,
+    QMessageBox, QFileDialog, QFrame, QSplitter, QDoubleSpinBox
+)
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QFont, QColor
+from typing import Optional, List, Dict, Any
+import json
+import os
+
+import config
+from models.enums import InputType
+from utils.logger import setup_logger
+
+logger = setup_logger(__name__)
+
+
+class TestStepEditorDialog(QDialog):
+    """
+    Dialog for editing test steps.
+    
+    Layout:
+    ┌────────────────────────────────────────────────────────────────┐
+    │                    Test Adımları Editörü                       │
+    ├──────────────────┬─────────────────────────────────────────────┤
+    │  Step List       │  Step Details                               │
+    │  (Scrollable)    │                                             │
+    │                  │  Name: [_______________]                    │
+    │  1. Step Name    │  Description: [________________]            │
+    │  2. Step Name    │  Time Limit: [___] seconds                  │
+    │  3. Step Name◄   │  Image Path: [___________] [Browse]         │
+    │  4. Step Name    │  Input Type: [Dropdown▼]                    │
+    │  ...             │                                             │
+    │                  │  [If NUMBER selected:]                      │
+    │  [+ Yeni Adım]   │  Input Label: [_______________]             │
+    │                  │  Min Value: [___] Max Value: [___]          │
+    │                  │                                             │
+    │                  │  [If PASS_FAIL selected:]                   │
+    │                  │  Input Label: "Sonuç" (fixed)               │
+    │                  │                                             │
+    ├──────────────────┴─────────────────────────────────────────────┤
+    │           [Kaydet]  [İptal]  [Adımı Sil]                       │
+    └────────────────────────────────────────────────────────────────┘
+    
+    Signals:
+        steps_updated: Emitted when steps are saved (list of complete step dicts)
+    """
+    
+    steps_updated = pyqtSignal(list)  # Emits list of updated step dictionaries
+    
+    # Input type display names (Turkish)
+    INPUT_TYPE_NAMES = {
+        InputType.NONE: "Yok (Giriş Yok)",
+        InputType.PASS_FAIL: "Geçti-Kaldı",
+        InputType.NUMBER: "Sayı"
+    }
+    
+    def __init__(self, test_steps: list, auth_manager=None, parent=None):
+        """
+        Initialize the test step editor dialog.
+        
+        Args:
+            test_steps: List of TestStep objects (not dicts!) from test_manager.steps
+            auth_manager: AuthManager instance for role-based permissions
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        
+        # Store original TestStep objects and create editable copies
+        self.original_steps = test_steps
+        self.steps = self._create_step_dicts(test_steps)
+        
+        self.auth_manager = auth_manager
+        self.current_step_index = -1
+        self.unsaved_changes = False
+        
+        # Determine if user is developer (full access) or admin (limited access)
+        self.is_developer = False
+        if auth_manager:
+            role = auth_manager.get_role()
+            self.is_developer = (role == config.UserRole.DEVELOPER)
+        
+        self._init_ui()
+        self._populate_step_list()
+        
+        # Select first step if available
+        if self.steps:
+            self.step_list.setCurrentRow(0)
+            self._on_step_selected(0)
+        
+        logger.info(f"TestStepEditorDialog initialized with {len(self.steps)} steps "
+                   f"(Developer mode: {self.is_developer})")
+    
+    def _create_step_dicts(self, test_steps: list) -> List[Dict[str, Any]]:
+        """
+        Create complete step dictionaries from TestStep objects.
+        
+        This method creates dictionaries with ALL fields needed for TestStep.from_dict(),
+        working around the bug where TestStep.to_dict() doesn't include all fields.
+        
+        Args:
+            test_steps: List of TestStep objects
+            
+        Returns:
+            List of complete step dictionaries
+        """
+        step_dicts = []
+        
+        for step in test_steps:
+            # Create a complete dictionary with all required fields
+            step_dict = {
+                # Required fields for from_dict
+                'step_id': step.step_id,
+                'name': step.name,
+                'description': step.description,  # This is missing from to_dict()!
+                'time_limit': step.time_limit,
+                'image_path': step.image_path,  # This is missing from to_dict()!
+                'input_type': step.input_type.value,  # This is missing from to_dict()!
+                'input_label': step.input_label,  # This is missing from to_dict()!
+                'input_validation': step.input_validation,
+                
+                # Runtime state (optional)
+                'status': step.status.value,
+                'result_value': step.result_value,
+                'actual_duration': step.actual_duration,
+                'comment': step.comment,
+                'completed_by': step.completed_by,
+                'completed_at': step.completed_at,
+            }
+            step_dicts.append(step_dict)
+        
+        return step_dicts
+    
+    def _init_ui(self):
+        """Initialize the user interface"""
+        self.setWindowTitle("Test Adımları Editörü")
+        self.setMinimumSize(1000, 700)
+        self.setModal(True)
+        
+        # Set dark theme
+        self.setStyleSheet(f"""
+            QDialog {{
+                background-color: {config.Colors.BACKGROUND_PRIMARY};
+                color: {config.Colors.TEXT_PRIMARY};
+            }}
+            QLabel {{
+                color: {config.Colors.TEXT_PRIMARY};
+                font-size: {config.FONT_SIZE}pt;
+            }}
+            QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                border: 2px solid {config.Colors.BORDER};
+                border-radius: 6px;
+                padding: 8px;
+                font-size: {config.FONT_SIZE}pt;
+            }}
+            QLineEdit:focus, QTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {{
+                border: 2px solid {config.Colors.ACCENT_BLUE};
+            }}
+            QLineEdit:disabled, QTextEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {{
+                background-color: {config.Colors.BACKGROUND_SECONDARY};
+                color: {config.Colors.TEXT_DISABLED};
+            }}
+            QPushButton {{
+                background-color: {config.Colors.ACCENT_BLUE};
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-size: {config.FONT_SIZE}pt;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {config.Colors.ACCENT_LIGHT};
+            }}
+            QPushButton:pressed {{
+                background-color: #1976d2;
+            }}
+            QPushButton:disabled {{
+                background-color: {config.Colors.TEXT_DISABLED};
+            }}
+            QListWidget {{
+                background-color: {config.Colors.BACKGROUND_SECONDARY};
+                color: {config.Colors.TEXT_PRIMARY};
+                border: 2px solid {config.Colors.BORDER};
+                border-radius: 6px;
+                font-size: {config.FONT_SIZE}pt;
+                outline: none;
+            }}
+            QListWidget::item {{
+                padding: 10px;
+                border-bottom: 1px solid {config.Colors.BORDER};
+            }}
+            QListWidget::item:selected {{
+                background-color: {config.Colors.ACCENT_BLUE};
+                color: white;
+            }}
+            QListWidget::item:hover {{
+                background-color: {config.Colors.BACKGROUND_TERTIARY};
+            }}
+            QGroupBox {{
+                font-size: {config.FONT_SIZE + 1}pt;
+                font-weight: bold;
+                color: {config.Colors.TEXT_PRIMARY};
+                border: 2px solid {config.Colors.ACCENT_BLUE};
+                border-radius: 8px;
+                margin-top: 12px;
+                padding-top: 10px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 10px;
+            }}
+            QScrollArea {{
+                border: none;
+                background-color: transparent;
+            }}
+        """)
+        
+        # Main layout
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Title
+        title_label = QLabel("🔧 Test Adımları Editörü")
+        title_label.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE_LARGE}pt;
+            font-weight: bold;
+            color: {config.Colors.TEXT_PRIMARY};
+            padding: 10px 0;
+        """)
+        title_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(title_label)
+        
+        # Role indicator
+        if self.is_developer:
+            role_text = "🛠️ Geliştirici Modu - Tüm alanları düzenleyebilirsiniz"
+            role_color = config.Colors.SUCCESS
+        else:
+            role_text = "🔒 Yönetici Modu - Sadece süre limitini düzenleyebilirsiniz"
+            role_color = config.Colors.WARNING
+        
+        role_label = QLabel(role_text)
+        role_label.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE - 1}pt;
+            color: {role_color};
+            padding: 5px;
+            background-color: {config.Colors.BACKGROUND_SECONDARY};
+            border-radius: 4px;
+        """)
+        role_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(role_label)
+        
+        # Splitter for list and details
+        splitter = QSplitter(Qt.Horizontal)
+        
+        # Left panel: Step list
+        left_panel = self._create_step_list_panel()
+        splitter.addWidget(left_panel)
+        
+        # Right panel: Step details
+        right_panel = self._create_step_details_panel()
+        splitter.addWidget(right_panel)
+        
+        # Set splitter proportions (30% list, 70% details)
+        splitter.setSizes([300, 700])
+        
+        main_layout.addWidget(splitter, 1)
+        
+        # Bottom buttons
+        main_layout.addWidget(self._create_button_panel())
+        
+        self.setLayout(main_layout)
+    
+    def _create_step_list_panel(self) -> QWidget:
+        """Create the left panel with step list"""
+        panel = QWidget()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 10, 0)
+        
+        # Header
+        header = QLabel("📋 Adım Listesi")
+        header.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE + 1}pt;
+            font-weight: bold;
+            padding: 5px;
+        """)
+        layout.addWidget(header)
+        
+        # Step list
+        self.step_list = QListWidget()
+        self.step_list.setMinimumWidth(250)
+        self.step_list.currentRowChanged.connect(self._on_step_selected)
+        layout.addWidget(self.step_list, 1)
+        
+        # Add new step button (only for developers)
+        if self.is_developer:
+            add_btn = QPushButton("➕ Yeni Adım Ekle")
+            add_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {config.Colors.SUCCESS};
+                    padding: 12px;
+                }}
+                QPushButton:hover {{
+                    background-color: #66bb6a;
+                }}
+            """)
+            add_btn.clicked.connect(self._on_add_step)
+            layout.addWidget(add_btn)
+        
+        panel.setLayout(layout)
+        return panel
+    
+    def _create_step_details_panel(self) -> QWidget:
+        """Create the right panel with step details editor"""
+        panel = QWidget()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(10, 0, 0, 0)
+        
+        # Header
+        header = QLabel("📝 Adım Detayları")
+        header.setStyleSheet(f"""
+            font-size: {config.FONT_SIZE + 1}pt;
+            font-weight: bold;
+            padding: 5px;
+        """)
+        layout.addWidget(header)
+        
+        # Scroll area for details
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout()
+        scroll_layout.setSpacing(15)
+        
+        # Basic Info Group
+        basic_group = self._create_basic_info_group()
+        scroll_layout.addWidget(basic_group)
+        
+        # Input Settings Group
+        input_group = self._create_input_settings_group()
+        scroll_layout.addWidget(input_group)
+        
+        # Number Input Settings Group (conditionally visible)
+        self.number_settings_group = self._create_number_settings_group()
+        self.number_settings_group.setVisible(False)
+        scroll_layout.addWidget(self.number_settings_group)
+        
+        scroll_layout.addStretch()
+        scroll_content.setLayout(scroll_layout)
+        scroll.setWidget(scroll_content)
+        
+        layout.addWidget(scroll, 1)
+        panel.setLayout(layout)
+        return panel
+    
+    def _create_basic_info_group(self) -> QGroupBox:
+        """Create the basic information group"""
+        group = QGroupBox("📌 Temel Bilgiler")
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(15, 20, 15, 15)
+        
+        # Step ID (read-only display)
+        id_layout = QHBoxLayout()
+        id_label = QLabel("Adım No:")
+        id_label.setFixedWidth(120)
+        self.step_id_display = QLabel("-")
+        self.step_id_display.setStyleSheet(f"""
+            font-weight: bold;
+            color: {config.Colors.ACCENT_BLUE};
+        """)
+        id_layout.addWidget(id_label)
+        id_layout.addWidget(self.step_id_display, 1)
+        layout.addLayout(id_layout)
+        
+        # Name
+        name_layout = QHBoxLayout()
+        name_label = QLabel("Adım Adı:")
+        name_label.setFixedWidth(120)
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("Adım adını girin...")
+        self.name_input.setEnabled(self.is_developer)
+        self.name_input.textChanged.connect(self._on_field_changed)
+        name_layout.addWidget(name_label)
+        name_layout.addWidget(self.name_input, 1)
+        layout.addLayout(name_layout)
+        
+        # Description
+        desc_layout = QVBoxLayout()
+        desc_label = QLabel("Açıklama:")
+        self.description_input = QTextEdit()
+        self.description_input.setPlaceholderText("Adım açıklamasını girin...")
+        self.description_input.setMinimumHeight(100)
+        self.description_input.setMaximumHeight(150)
+        self.description_input.setEnabled(self.is_developer)
+        self.description_input.textChanged.connect(self._on_field_changed)
+        desc_layout.addWidget(desc_label)
+        desc_layout.addWidget(self.description_input)
+        layout.addLayout(desc_layout)
+        
+        # Time Limit (editable by both admin and developer)
+        time_layout = QHBoxLayout()
+        time_label = QLabel("Süre Limiti:")
+        time_label.setFixedWidth(120)
+        self.time_limit_input = QSpinBox()
+        self.time_limit_input.setRange(1, 3600)  # 1 second to 1 hour
+        self.time_limit_input.setSuffix(" saniye")
+        self.time_limit_input.setValue(60)
+        self.time_limit_input.setEnabled(True)  # Always enabled for admin/developer
+        self.time_limit_input.valueChanged.connect(self._on_field_changed)
+        time_layout.addWidget(time_label)
+        time_layout.addWidget(self.time_limit_input)
+        time_layout.addStretch()
+        layout.addLayout(time_layout)
+        
+        # Image Path
+        image_layout = QHBoxLayout()
+        image_label = QLabel("Görsel Yolu:")
+        image_label.setFixedWidth(120)
+        self.image_path_input = QLineEdit()
+        self.image_path_input.setPlaceholderText("resources/images/step_xxx.png")
+        self.image_path_input.setEnabled(self.is_developer)
+        self.image_path_input.textChanged.connect(self._on_field_changed)
+        
+        browse_btn = QPushButton("Gözat...")
+        browse_btn.setFixedWidth(100)
+        browse_btn.setEnabled(self.is_developer)
+        browse_btn.clicked.connect(self._on_browse_image)
+        
+        image_layout.addWidget(image_label)
+        image_layout.addWidget(self.image_path_input, 1)
+        image_layout.addWidget(browse_btn)
+        layout.addLayout(image_layout)
+        
+        group.setLayout(layout)
+        return group
+    
+    def _create_input_settings_group(self) -> QGroupBox:
+        """Create the input settings group"""
+        group = QGroupBox("⌨️ Giriş Ayarları")
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(15, 20, 15, 15)
+        
+        # Input Type
+        type_layout = QHBoxLayout()
+        type_label = QLabel("Giriş Tipi:")
+        type_label.setFixedWidth(120)
+        self.input_type_combo = QComboBox()
+        for input_type, display_name in self.INPUT_TYPE_NAMES.items():
+            self.input_type_combo.addItem(display_name, input_type)
+        self.input_type_combo.setEnabled(self.is_developer)
+        self.input_type_combo.currentIndexChanged.connect(self._on_input_type_changed)
+        type_layout.addWidget(type_label)
+        type_layout.addWidget(self.input_type_combo, 1)
+        layout.addLayout(type_layout)
+        
+        # Input Label (shown conditionally)
+        self.input_label_layout = QHBoxLayout()
+        input_label_label = QLabel("Giriş Etiketi:")
+        input_label_label.setFixedWidth(120)
+        self.input_label_input = QLineEdit()
+        self.input_label_input.setPlaceholderText("Test Sonucu")
+        self.input_label_input.setEnabled(self.is_developer)
+        self.input_label_input.textChanged.connect(self._on_field_changed)
+        self.input_label_layout.addWidget(input_label_label)
+        self.input_label_layout.addWidget(self.input_label_input, 1)
+        
+        self.input_label_widget = QWidget()
+        self.input_label_widget.setLayout(self.input_label_layout)
+        self.input_label_widget.setVisible(False)
+        layout.addWidget(self.input_label_widget)
+        
+        # Fixed label for pass/fail
+        self.pass_fail_label = QLabel("ℹ️ Geçti-Kaldı seçildiğinde giriş etiketi otomatik olarak 'Sonuç' olur.")
+        self.pass_fail_label.setStyleSheet(f"""
+            color: {config.Colors.TEXT_SECONDARY};
+            font-size: {config.FONT_SIZE - 1}pt;
+            font-style: italic;
+            padding: 5px;
+        """)
+        self.pass_fail_label.setVisible(False)
+        layout.addWidget(self.pass_fail_label)
+        
+        group.setLayout(layout)
+        return group
+    
+    def _create_number_settings_group(self) -> QGroupBox:
+        """Create the number-specific settings group"""
+        group = QGroupBox("🔢 Sayısal Giriş Ayarları")
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(15, 20, 15, 15)
+        
+        # Min/Max values
+        range_layout = QHBoxLayout()
+        
+        min_label = QLabel("Minimum:")
+        min_label.setFixedWidth(80)
+        self.min_value_input = QDoubleSpinBox()
+        self.min_value_input.setRange(-999999, 999999)
+        self.min_value_input.setDecimals(2)
+        self.min_value_input.setValue(0)
+        self.min_value_input.setEnabled(self.is_developer)
+        self.min_value_input.valueChanged.connect(self._on_field_changed)
+        
+        max_label = QLabel("Maximum:")
+        max_label.setFixedWidth(80)
+        self.max_value_input = QDoubleSpinBox()
+        self.max_value_input.setRange(-999999, 999999)
+        self.max_value_input.setDecimals(2)
+        self.max_value_input.setValue(100)
+        self.max_value_input.setEnabled(self.is_developer)
+        self.max_value_input.valueChanged.connect(self._on_field_changed)
+        
+        range_layout.addWidget(min_label)
+        range_layout.addWidget(self.min_value_input)
+        range_layout.addSpacing(20)
+        range_layout.addWidget(max_label)
+        range_layout.addWidget(self.max_value_input)
+        range_layout.addStretch()
+        layout.addLayout(range_layout)
+        
+        # Info label
+        info_label = QLabel("ℹ️ Girilen değer bu aralıkta olmalıdır.")
+        info_label.setStyleSheet(f"""
+            color: {config.Colors.TEXT_SECONDARY};
+            font-size: {config.FONT_SIZE - 1}pt;
+            font-style: italic;
+            padding: 5px;
+        """)
+        layout.addWidget(info_label)
+        
+        group.setLayout(layout)
+        return group
+    
+    def _create_button_panel(self) -> QWidget:
+        """Create the bottom button panel"""
+        panel = QWidget()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 10, 0, 0)
+        
+        # Delete button (only for developers)
+        if self.is_developer:
+            self.delete_btn = QPushButton("🗑️ Adımı Sil")
+            self.delete_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {config.Colors.ERROR};
+                    padding: 12px 20px;
+                }}
+                QPushButton:hover {{
+                    background-color: #e53935;
+                }}
+            """)
+            self.delete_btn.clicked.connect(self._on_delete_step)
+            layout.addWidget(self.delete_btn)
+        
+        layout.addStretch()
+        
+        # Cancel button
+        cancel_btn = QPushButton("İptal")
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {config.Colors.BUTTON_SECONDARY};
+                padding: 12px 30px;
+            }}
+        """)
+        cancel_btn.clicked.connect(self._on_cancel)
+        layout.addWidget(cancel_btn)
+        
+        # Save button
+        save_btn = QPushButton("💾 Kaydet")
+        save_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {config.Colors.SUCCESS};
+                padding: 12px 30px;
+            }}
+            QPushButton:hover {{
+                background-color: #66bb6a;
+            }}
+        """)
+        save_btn.clicked.connect(self._on_save)
+        layout.addWidget(save_btn)
+        
+        panel.setLayout(layout)
+        return panel
+    
+    def _populate_step_list(self):
+        """Populate the step list with current steps"""
+        self.step_list.clear()
+        
+        for i, step in enumerate(self.steps):
+            step_id = step.get('step_id', i + 1)
+            name = step.get('name', f'Adım {step_id}')
+            item = QListWidgetItem(f"{step_id}. {name}")
+            item.setData(Qt.UserRole, i)  # Store index
+            self.step_list.addItem(item)
+    
+    def _on_step_selected(self, row: int):
+        """Handle step selection from list"""
+        if row < 0 or row >= len(self.steps):
+            return
+        
+        # Save current step if there were changes
+        if self.current_step_index >= 0 and self.unsaved_changes:
+            self._save_current_step_to_memory()
+        
+        self.current_step_index = row
+        step = self.steps[row]
+        
+        # Populate fields
+        self.step_id_display.setText(str(step.get('step_id', row + 1)))
+        self.name_input.setText(step.get('name', ''))
+        self.description_input.setPlainText(step.get('description', ''))
+        self.time_limit_input.setValue(step.get('time_limit', 60))
+        self.image_path_input.setText(step.get('image_path') or '')
+        
+        # Input type
+        input_type_str = step.get('input_type', 'none')
+        try:
+            input_type = InputType(input_type_str)
+        except ValueError:
+            input_type = InputType.NONE
+        
+        # Find and set combo box index
+        for i in range(self.input_type_combo.count()):
+            if self.input_type_combo.itemData(i) == input_type:
+                self.input_type_combo.setCurrentIndex(i)
+                break
+        
+        # Input label
+        self.input_label_input.setText(step.get('input_label', 'Test Sonucu'))
+        
+        # Number validation
+        validation = step.get('input_validation', {})
+        self.min_value_input.setValue(validation.get('min', 0))
+        self.max_value_input.setValue(validation.get('max', 100))
+        
+        # Update visibility based on input type
+        self._on_input_type_changed(self.input_type_combo.currentIndex())
+        
+        self.unsaved_changes = False
+        logger.debug(f"Step {row + 1} selected: {step.get('name', 'Unknown')}")
+    
+    def _on_input_type_changed(self, index: int):
+        """Handle input type change"""
+        input_type = self.input_type_combo.itemData(index)
+        
+        if input_type == InputType.NONE:
+            # No input - hide all input settings
+            self.input_label_widget.setVisible(False)
+            self.pass_fail_label.setVisible(False)
+            self.number_settings_group.setVisible(False)
+        
+        elif input_type == InputType.PASS_FAIL:
+            # Pass/Fail - show fixed label info
+            self.input_label_widget.setVisible(False)
+            self.pass_fail_label.setVisible(True)
+            self.number_settings_group.setVisible(False)
+        
+        elif input_type == InputType.NUMBER:
+            # Number - show label and range settings
+            self.input_label_widget.setVisible(True)
+            self.pass_fail_label.setVisible(False)
+            self.number_settings_group.setVisible(True)
+        
+        self._on_field_changed()
+    
+    def _on_field_changed(self):
+        """Mark that there are unsaved changes"""
+        self.unsaved_changes = True
+    
+    def _save_current_step_to_memory(self):
+        """Save current step changes to memory (not to file yet)"""
+        if self.current_step_index < 0 or self.current_step_index >= len(self.steps):
+            return
+        
+        step = self.steps[self.current_step_index]
+        
+        # Only update fields the user can edit
+        if self.is_developer:
+            step['name'] = self.name_input.text().strip()
+            step['description'] = self.description_input.toPlainText().strip()
+            step['image_path'] = self.image_path_input.text().strip() or None
+            
+            input_type = self.input_type_combo.currentData()
+            step['input_type'] = input_type.value
+            
+            if input_type == InputType.PASS_FAIL:
+                step['input_label'] = 'Sonuç'
+            elif input_type == InputType.NUMBER:
+                step['input_label'] = self.input_label_input.text().strip() or 'Test Sonucu'
+                step['input_validation'] = {
+                    'min': self.min_value_input.value(),
+                    'max': self.max_value_input.value()
+                }
+            else:
+                step['input_label'] = 'Test Sonucu'
+                step['input_validation'] = {}
+        
+        # Time limit is always editable
+        step['time_limit'] = self.time_limit_input.value()
+        
+        # Update list item text
+        item = self.step_list.item(self.current_step_index)
+        if item:
+            item.setText(f"{step.get('step_id', self.current_step_index + 1)}. {step.get('name', '')}")
+        
+        logger.debug(f"Step {self.current_step_index + 1} saved to memory")
+    
+    def _on_browse_image(self):
+        """Open file dialog to browse for image"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Görsel Seç",
+            "resources/images",
+            "Görseller (*.png *.jpg *.jpeg *.bmp)"
+        )
+        
+        if file_path:
+            # Convert to relative path if possible
+            try:
+                rel_path = os.path.relpath(file_path)
+                self.image_path_input.setText(rel_path)
+            except ValueError:
+                self.image_path_input.setText(file_path)
+    
+    def _on_add_step(self):
+        """Add a new step"""
+        if not self.is_developer:
+            return
+        
+        # Save current step first
+        if self.current_step_index >= 0:
+            self._save_current_step_to_memory()
+        
+        # Create new step with next ID
+        max_id = max((step.get('step_id', 0) for step in self.steps), default=0)
+        new_step = {
+            'step_id': max_id + 1,
+            'name': f'Yeni Adım {max_id + 1}',
+            'description': '',
+            'time_limit': 60,
+            'image_path': None,
+            'input_type': 'none',
+            'input_label': 'Test Sonucu',
+            'input_validation': {},
+            # Runtime state (defaults)
+            'status': 'not_started',
+            'result_value': None,
+            'actual_duration': None,
+            'comment': None,
+            'completed_by': None,
+            'completed_at': None,
+        }
+        
+        self.steps.append(new_step)
+        self._populate_step_list()
+        
+        # Select the new step
+        self.step_list.setCurrentRow(len(self.steps) - 1)
+        
+        self.unsaved_changes = True
+        logger.info(f"New step added: {new_step['name']}")
+    
+    def _on_delete_step(self):
+        """Delete the current step"""
+        if not self.is_developer:
+            return
+        
+        if self.current_step_index < 0 or len(self.steps) <= 1:
+            QMessageBox.warning(
+                self,
+                "Uyarı",
+                "En az bir adım olmalıdır. Silme işlemi yapılamaz.",
+                QMessageBox.Ok
+            )
+            return
+        
+        step = self.steps[self.current_step_index]
+        
+        reply = QMessageBox.question(
+            self,
+            "Adımı Sil",
+            f"'{step.get('name', 'Bu adım')}' adımını silmek istediğinize emin misiniz?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            del self.steps[self.current_step_index]
+            
+            # Re-number steps
+            for i, step in enumerate(self.steps):
+                step['step_id'] = i + 1
+            
+            self._populate_step_list()
+            
+            # Select previous step or first
+            new_index = min(self.current_step_index, len(self.steps) - 1)
+            if new_index >= 0:
+                self.step_list.setCurrentRow(new_index)
+            
+            self.unsaved_changes = True
+            logger.info(f"Step deleted, {len(self.steps)} steps remaining")
+    
+    def _on_save(self):
+        """Save all changes and close"""
+        # Save current step
+        if self.current_step_index >= 0:
+            self._save_current_step_to_memory()
+        
+        # Validate all steps
+        for i, step in enumerate(self.steps):
+            if not step.get('name', '').strip():
+                QMessageBox.warning(
+                    self,
+                    "Doğrulama Hatası",
+                    f"Adım {i + 1}: Adım adı boş olamaz.",
+                    QMessageBox.Ok
+                )
+                self.step_list.setCurrentRow(i)
+                return
+            
+            if step.get('time_limit', 0) <= 0:
+                QMessageBox.warning(
+                    self,
+                    "Doğrulama Hatası",
+                    f"Adım {i + 1}: Süre limiti 0'dan büyük olmalıdır.",
+                    QMessageBox.Ok
+                )
+                self.step_list.setCurrentRow(i)
+                return
+            
+            # Validate number range
+            if step.get('input_type') == 'number':
+                validation = step.get('input_validation', {})
+                min_val = validation.get('min', 0)
+                max_val = validation.get('max', 100)
+                if min_val >= max_val:
+                    QMessageBox.warning(
+                        self,
+                        "Doğrulama Hatası",
+                        f"Adım {i + 1}: Minimum değer maksimum değerden küçük olmalıdır.",
+                        QMessageBox.Ok
+                    )
+                    self.step_list.setCurrentRow(i)
+                    return
+        
+        # Emit signal with updated steps
+        self.steps_updated.emit(self.steps)
+        
+        logger.info(f"Steps saved: {len(self.steps)} steps")
+        QMessageBox.information(
+            self,
+            "Başarılı",
+            f"{len(self.steps)} adım başarıyla kaydedildi.",
+            QMessageBox.Ok
+        )
+        
+        self.accept()
+    
+    def _on_cancel(self):
+        """Cancel and close without saving"""
+        if self.unsaved_changes:
+            reply = QMessageBox.question(
+                self,
+                "Kaydedilmemiş Değişiklikler",
+                "Kaydedilmemiş değişiklikler var. Çıkmak istediğinize emin misiniz?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply != QMessageBox.Yes:
+                return
+        
+        self.reject()
+    
+    def get_steps(self) -> List[Dict[str, Any]]:
+        """Get the edited steps"""
+        return self.steps
+```
+
 # ui\dialogs\update_settings_dialog.py
 
 ```py
@@ -4349,7 +6587,7 @@ from models.enums import InputType, TimerStatus
 from persistence import ContinuousWriter
 import config
 from utils.logger import setup_logger
-
+from ui.dialogs.test_step_editor_dialog import TestStepEditorDialog
 logger = setup_logger(__name__)
 
 
@@ -4523,7 +6761,21 @@ class MainWindow(QMainWindow):
         self.user_menu.addAction(self.switch_user_action)
         
         logger.debug("Menu bar created with File, View, and User menus")
-    
+        # ====================================================================
+        # Developer menu (Only visible to Developers and Admins)
+        # ====================================================================
+        if self.auth_manager:
+            role = self.auth_manager.get_role()
+            if role in [config.UserRole.DEVELOPER, config.UserRole.ADMIN]:
+                self.developer_menu = menubar.addMenu("Geliştirici")
+                
+                # Edit test steps action
+                self.edit_steps_action = QAction("Test Adımlarını Düzenle...", self)
+                self.edit_steps_action.setShortcut("Ctrl+E")
+                self.edit_steps_action.triggered.connect(self._on_edit_test_steps)
+                self.developer_menu.addAction(self.edit_steps_action)
+                
+                logger.debug("Developer menu created")
     def _create_status_bar(self):
         """Create status bar to show continuous writer status"""
         self.status_bar = QStatusBar()
@@ -4907,6 +7159,124 @@ class MainWindow(QMainWindow):
                 self.content_widget.export_button.click()
         
         logger.info("Test procedure completed")
+    def _on_edit_test_steps(self):
+        """
+        Open the test step editor dialog.
+        
+        Permission levels:
+        - Developer: Can edit all fields, add/delete steps
+        - Admin: Can only edit time_limit field
+        
+        Triggered by:
+        - Menu: Geliştirici → Test Adımlarını Düzenle...
+        - Shortcut: Ctrl+E
+        """
+        from ui.dialogs.test_step_editor_dialog import TestStepEditorDialog
+        
+        if not self.test_manager.steps:
+            QMessageBox.warning(
+                self,
+                "Uyarı",
+                "Düzenlenecek test adımı bulunamadı. Önce bir test yükleyin.",
+                QMessageBox.Ok
+            )
+            return
+        
+        # Pass the actual TestStep objects to the dialog
+        dialog = TestStepEditorDialog(self.test_manager.steps, self.auth_manager, self)
+        dialog.steps_updated.connect(self._on_steps_updated)
+        dialog.exec_()
+    
+    def _on_steps_updated(self, updated_steps: list):
+        """
+        Handle updated steps from the editor.
+        
+        Args:
+            updated_steps: List of step dictionaries with ALL required fields
+        """
+        from models.test_step import TestStep
+        
+        try:
+            # Convert dictionaries back to TestStep objects
+            new_steps = []
+            for step_data in updated_steps:
+                step = TestStep.from_dict(step_data)
+                new_steps.append(step)
+            
+            # Update test manager
+            self.test_manager.steps = new_steps
+            
+            # Update session steps if session exists
+            if self.test_manager.session:
+                self.test_manager.session.steps = new_steps
+            
+            # Refresh sidebar
+            if hasattr(self, 'sidebar') and self.sidebar:
+                self.sidebar.set_steps(new_steps)
+            
+            # Save to file
+            self._save_steps_to_file(updated_steps)
+            
+            # Show success message
+            self.status_bar.showMessage(
+                f"Test adımları güncellendi ({len(new_steps)} adım)", 
+                5000
+            )
+            
+            logger.info(f"Steps updated from editor: {len(new_steps)} steps")
+            
+        except Exception as e:
+            logger.error(f"Failed to update steps: {e}")
+            QMessageBox.critical(
+                self,
+                "Hata",
+                f"Adımlar güncellenirken hata oluştu: {e}",
+                QMessageBox.Ok
+            )
+    
+    def _save_steps_to_file(self, steps_data: list):
+        """
+        Save updated steps to the test procedure JSON file.
+        
+        Args:
+            steps_data: List of step dictionaries
+        """
+        import json
+        
+        # Default test file path
+        test_file_path = "data/sample_test.json"
+        
+        try:
+            # Load existing file
+            with open(test_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Clean up step data for JSON (remove runtime state)
+            clean_steps = []
+            for step in steps_data:
+                clean_step = {
+                    'step_id': step['step_id'],
+                    'name': step['name'],
+                    'description': step['description'],
+                    'time_limit': step['time_limit'],
+                    'image_path': step.get('image_path'),
+                    'input_type': step['input_type'],
+                    'input_label': step.get('input_label', 'Test Sonucu'),
+                    'input_validation': step.get('input_validation', {})
+                }
+                clean_steps.append(clean_step)
+            
+            # Update steps in data
+            data['steps'] = clean_steps
+            
+            # Save back
+            with open(test_file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"Steps saved to {test_file_path}")
+            
+        except Exception as e:
+            logger.error(f"Failed to save steps to file: {e}")
 ```
 
 # ui\widgets\__init__.py
@@ -5093,6 +7463,7 @@ class ButtonPanel(QWidget):
 # ui\widgets\content\content_widget.py
 
 ```py
+# -*- coding: utf-8 -*-
 """
 Content Widget - Row 3 (STEP 1: BOTTOM SECTION REORGANIZED)
 Main orchestrator with all controls in single horizontal row
@@ -5103,9 +7474,11 @@ CHANGES FROM ORIGINAL:
 3. Image padding reduced from 10px to 5px
 4. Button heights standardized to 45px
 5. Logical left-to-right flow for controls
+
+FIX APPLIED: Buttons now use setFixedWidth() to prevent shrinking when İlerleme Paneli opens
 """
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel, 
-                             QMessageBox, QPushButton, QTextEdit)
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel,
+                             QMessageBox, QPushButton, QTextEdit, QSizePolicy)
 from PyQt5.QtCore import pyqtSignal
 from typing import Optional
 
@@ -5228,8 +7601,8 @@ class ContentWidget(QWidget):
     
     def _create_controls_row(self) -> QWidget:
         """
-        NEW METHOD: Create single horizontal row with all controls:
-        [Input widgets] [YAZ] Sonuç:__ [Raporla] [YORUM EKLE] [İlerle >]
+        Create single horizontal row with all controls:
+        [Input widgets] [YAZ] Sonuç:__ <--stretch--> [Raporla] [YORUM EKLE] [İlerle >]
         
         Layout flow (left to right):
         1. Input section (NUMBER or PASS/FAIL widgets dynamically inserted)
@@ -5237,6 +7610,8 @@ class ContentWidget(QWidget):
         3. Raporla (Export) button
         4. YORUM EKLE (Comment toggle) button
         5. İlerle > (Proceed) button
+        
+        FIX: All buttons use setFixedWidth() to prevent shrinking when İlerleme Paneli opens
         """
         container = QWidget()
         main_layout = QHBoxLayout()
@@ -5249,28 +7624,32 @@ class ContentWidget(QWidget):
         self.input_layout.setContentsMargins(0, 0, 0, 0)
         self.input_layout.setSpacing(10)
         self.input_container.setLayout(self.input_layout)
+        # Use Minimum so it can shrink if needed, but input widgets inside will maintain their size
+        self.input_container.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
         main_layout.addWidget(self.input_container)
         
-        # Add stretch to push action buttons to the right
+        # Stretch between input and action buttons - this absorbs extra space
         main_layout.addStretch(1)
         
         # Section 2: Export button (Raporla)
         self.export_button = ExportButton()
-        # CHANGE: Standardized height
+        # FIX: Use setFixedSize to absolutely prevent shrinking
         self.export_button.setFixedHeight(45)
+        self.export_button.setFixedWidth(120)  # FIX: Fixed width prevents shrinking
         main_layout.addWidget(self.export_button)
         
         # Section 3: Comment toggle button (YORUM EKLE)
         self.comment_button = QPushButton(config.Labels.ADD_COMMENT)
-        self.comment_button.setFixedHeight(45)  # CHANGE: Standardized height
-        self.comment_button.setMinimumWidth(120)
+        # FIX: Use setFixedSize to absolutely prevent shrinking
+        self.comment_button.setFixedHeight(45)
+        self.comment_button.setFixedWidth(130)  # FIX: Fixed width prevents shrinking
         self.comment_button.setStyleSheet(f"""
             QPushButton {{
                 background-color: {config.Colors.INPUT_BACKGROUND};
                 color: {config.Colors.TEXT_PRIMARY};
                 border: 2px solid {config.Colors.BORDER_COLOR};
                 border-radius: 5px;
-                padding: 10px 20px;
+                padding: 10px 15px;
                 font-size: {config.FONT_SIZE}pt;
                 font-weight: bold;
             }}
@@ -5288,15 +7667,16 @@ class ContentWidget(QWidget):
         
         # Section 4: Proceed button (İlerle >)
         self.proceed_button = QPushButton(config.Labels.PROCEED)
-        self.proceed_button.setFixedHeight(45)  # CHANGE: Standardized height
-        self.proceed_button.setMinimumWidth(100)
+        # FIX: Use setFixedSize to absolutely prevent shrinking
+        self.proceed_button.setFixedHeight(45)
+        self.proceed_button.setFixedWidth(130)  # FIX: Fixed width prevents shrinking
         self.proceed_button.setStyleSheet(f"""
             QPushButton {{
                 background-color: {config.Colors.BUTTON_PRIMARY};
                 color: {config.Colors.TEXT_PRIMARY};
                 border: none;
                 border-radius: 5px;
-                padding: 10px 20px;
+                padding: 10px 15px;
                 font-size: {config.FONT_SIZE}pt;
                 font-weight: bold;
             }}
@@ -6796,6 +9176,7 @@ from PyQt5.QtGui import QFont
 import config
 from models.enums import TimerStatus
 from utils.logger import setup_logger
+from PyQt5.QtGui import QFont, QPixmap
 
 logger = setup_logger(__name__)
 
@@ -6944,29 +9325,70 @@ class StatusBarWidget(QWidget):
         return widget
     
     def _create_emoji_section(self) -> QWidget:
-        """Create status emoji section"""
+        """Create status emoji section with image that fills the container"""
         widget = QWidget()
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(5, 5, 5, 5)
         
-        # Emoji label with larger size
-        self.emoji_label = QLabel(config.EMOJI_NEUTRAL)
-        self.emoji_label.setStyleSheet(f"""
-            font-size: {config.FONT_SIZE_EMOJI}pt;
-            background-color: {config.Colors.INPUT_BACKGROUND};
-            border-radius: {config.EMOJI_BACKGROUND_SIZE // 2}px;
-            padding: 10px;
-        """)
+        # Emoji label - uses QPixmap, preserves aspect ratio
+        self.emoji_label = QLabel()
         self.emoji_label.setAlignment(Qt.AlignCenter)
-        self.emoji_label.setFixedSize(
-            config.EMOJI_BACKGROUND_SIZE,
-            config.EMOJI_BACKGROUND_SIZE
-        )
+        self.emoji_label.setMinimumSize(60, 60)
+        
+        # Set size policy to expand
+        from PyQt5.QtWidgets import QSizePolicy
+        self.emoji_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        
+        # Store original pixmaps for resizing
+        self._happy_pixmap = QPixmap(config.ICON_HAPPY)
+        self._sad_pixmap = QPixmap(config.ICON_SAD)
+        self._is_happy = True
+        
+        # Load default (happy) image
+        self._set_emoji_image(True)
         
         layout.addWidget(self.emoji_label)
         widget.setLayout(layout)
         
         return widget
+    
+    def _set_emoji_image(self, is_happy: bool):
+        """
+        Load and set emoji image with aspect ratio preserved.
+        
+        Args:
+            is_happy: True for happy face, False for sad face
+        """
+        self._is_happy = is_happy
+        pixmap = self._happy_pixmap if is_happy else self._sad_pixmap
+        
+        if not pixmap.isNull():
+            # Scale to fit label size while keeping aspect ratio
+            label_size = self.emoji_label.size()
+            scaled_pixmap = pixmap.scaled(
+                label_size,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            self.emoji_label.setPixmap(scaled_pixmap)
+            logger.debug(f"Emoji image loaded: {'happy' if is_happy else 'sad'}")
+        else:
+            # Fallback to text if image not found
+            fallback = "😊" if is_happy else "☹️"
+            self.emoji_label.setText(fallback)
+            self.emoji_label.setStyleSheet(f"""
+                font-size: {config.FONT_SIZE_EMOJI}pt;
+                background-color: {config.Colors.INPUT_BACKGROUND};
+            """)
+            logger.warning(f"Emoji image not found, using text fallback")
+    
+    def resizeEvent(self, event):
+        """Handle resize to update emoji image size"""
+        super().resizeEvent(event)
+        # Re-apply image with new size
+        if hasattr(self, '_is_happy'):
+            self._set_emoji_image(self._is_happy)
     
     def update_timer(self, remaining_seconds: int, status: str):
         """
@@ -7021,22 +9443,13 @@ class StatusBarWidget(QWidget):
     
     def update_emoji(self, is_happy: bool):
         """
-        Update status emoji.
+        Update status emoji image.
         
         Args:
-            is_happy: True for 😊, False for ☹️
+            is_happy: True for happy face, False for sad face
         """
-        emoji = config.EMOJI_HAPPY if is_happy else config.EMOJI_SAD
-        self.emoji_label.setText(emoji)
-        
-        # Update background color
-        bg_color = config.Colors.SUCCESS if is_happy else config.Colors.ERROR
-        self.emoji_label.setStyleSheet(f"""
-            font-size: {config.FONT_SIZE_EMOJI}pt;
-            background-color: {bg_color};
-            border-radius: {config.EMOJI_BACKGROUND_SIZE // 2}px;
-            padding: 10px;
-        """)
+        self._set_emoji_image(is_happy)
+        logger.debug(f"Emoji updated: {'happy' if is_happy else 'sad'}")
 ```
 
 # ui\widgets\title_widget.py
@@ -7792,6 +10205,10 @@ app_logger = setup_logger('test_procedure_app')
 """
 Settings Manager
 Handles persistent application settings (saves to disk)
+
+Extended with session metadata memory feature:
+- Remembers last entered session metadata values
+- Pre-populates fields for faster entry
 """
 import json
 import os
@@ -7806,6 +10223,9 @@ class SettingsManager:
     """
     Manages application settings that persist between sessions.
     Settings are saved to a JSON file in the application directory.
+    
+    Extended Features:
+    - Session metadata memory (remembers last entered values)
     """
     
     # Default settings file location
@@ -7843,7 +10263,9 @@ class SettingsManager:
             'update_interval': self.DEFAULT_UPDATE_INTERVAL,
             'last_station': '',
             'window_geometry': None,
-            'version': '1.0'
+            'version': '1.0',
+            # NEW: Session metadata memory
+            'last_session_metadata': {}
         }
         self._save_settings()
     
@@ -7918,6 +10340,42 @@ class SettingsManager:
         self.settings['update_interval'] = interval
         self._save_settings()
         logger.info(f"Update interval saved: {interval} seconds")
+    
+    # =========================================================================
+    # NEW: Session Metadata Memory
+    # =========================================================================
+    
+    def get_last_session_metadata(self) -> Dict[str, Any]:
+        """
+        Get last entered session metadata values.
+        
+        Used to pre-populate the TestSessionSetupDialog for faster entry.
+        
+        Returns:
+            Dictionary with last session metadata, or empty dict if none
+        """
+        return self.settings.get('last_session_metadata', {})
+    
+    def set_last_session_metadata(self, metadata: Dict[str, Any]):
+        """
+        Save session metadata for next session.
+        
+        Args:
+            metadata: Dictionary with session metadata values
+        """
+        self.settings['last_session_metadata'] = metadata
+        self._save_settings()
+        logger.info("Last session metadata saved for quick entry")
+    
+    def clear_last_session_metadata(self):
+        """Clear saved session metadata"""
+        self.settings['last_session_metadata'] = {}
+        self._save_settings()
+        logger.info("Last session metadata cleared")
+    
+    # =========================================================================
+    # General Methods
+    # =========================================================================
     
     def reset_to_defaults(self):
         """Reset all settings to default values"""

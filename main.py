@@ -25,10 +25,27 @@ from ui.dialogs.login_dialog import LoginDialog
 from ui.dialogs.test_session_setup_dialog import TestSessionSetupDialog
 import config
 import qdarkstyle
+import atexit
+import signal
 
 # Setup logger
 logger = setup_logger('main')
 
+# Global reference for cleanup
+_main_window = None
+
+def cleanup():
+    """Cleanup function called on exit"""
+    global _main_window
+    logger.info("Application cleanup - stopping all timers")
+    if _main_window is not None:
+        try:
+            if hasattr(_main_window, 'test_manager') and _main_window.test_manager:
+                if hasattr(_main_window.test_manager, 'timer'):
+                    _main_window.test_manager.timer.stop()
+                    logger.info("Timer stopped")
+        except Exception as e:
+            logger.error(f"Cleanup error: {e}")
 
 def get_application_path():
     """
@@ -51,9 +68,18 @@ def get_application_path():
 
 def main():
     """Main application entry point"""
+    global _main_window
+    
     logger.info("=" * 60)
     logger.info("Test Procedure Application Starting")
     logger.info("=" * 60)
+    
+    # ========================================================================
+    # Register cleanup handlers FIRST (before anything else)
+    # ========================================================================
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
+    signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0))
     
     # Get application base path
     app_path = get_application_path()
@@ -110,6 +136,7 @@ def main():
     # ========================================================================
     logger.info("Step 3: Creating main window...")
     window = MainWindow(auth_manager=auth_manager)
+    _main_window = window  # Store global reference for cleanup
     
     # Pass the full metadata to the window (for Excel export)
     if hasattr(window, 'test_manager') and window.test_manager:
@@ -164,7 +191,9 @@ def main():
         )
         sys.exit(1)
     
+    # ========================================================================
     # Run application event loop
+    # ========================================================================
     exit_code = app.exec_()
     
     logger.info("=" * 60)

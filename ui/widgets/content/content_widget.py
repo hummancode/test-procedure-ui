@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Content Widget - Row 3 (STEP 1: BOTTOM SECTION REORGANIZED)
 Main orchestrator with all controls in single horizontal row
@@ -8,9 +9,11 @@ CHANGES FROM ORIGINAL:
 3. Image padding reduced from 10px to 5px
 4. Button heights standardized to 45px
 5. Logical left-to-right flow for controls
+
+FIX APPLIED: Buttons now use setFixedWidth() to prevent shrinking when İlerleme Paneli opens
 """
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel, 
-                             QMessageBox, QPushButton, QTextEdit)
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel,
+                             QMessageBox, QPushButton, QTextEdit, QSizePolicy)
 from PyQt5.QtCore import pyqtSignal
 from typing import Optional
 
@@ -133,8 +136,8 @@ class ContentWidget(QWidget):
     
     def _create_controls_row(self) -> QWidget:
         """
-        NEW METHOD: Create single horizontal row with all controls:
-        [Input widgets] [YAZ] Sonuç:__ [Raporla] [YORUM EKLE] [İlerle >]
+        Create single horizontal row with all controls:
+        [Input widgets] [YAZ] Sonuç:__ <--stretch--> [Raporla] [YORUM EKLE] [İlerle >]
         
         Layout flow (left to right):
         1. Input section (NUMBER or PASS/FAIL widgets dynamically inserted)
@@ -142,6 +145,8 @@ class ContentWidget(QWidget):
         3. Raporla (Export) button
         4. YORUM EKLE (Comment toggle) button
         5. İlerle > (Proceed) button
+        
+        FIX: All buttons use setFixedWidth() to prevent shrinking when İlerleme Paneli opens
         """
         container = QWidget()
         main_layout = QHBoxLayout()
@@ -154,28 +159,32 @@ class ContentWidget(QWidget):
         self.input_layout.setContentsMargins(0, 0, 0, 0)
         self.input_layout.setSpacing(10)
         self.input_container.setLayout(self.input_layout)
+        # Use Minimum so it can shrink if needed, but input widgets inside will maintain their size
+        self.input_container.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
         main_layout.addWidget(self.input_container)
         
-        # Add stretch to push action buttons to the right
+        # Stretch between input and action buttons - this absorbs extra space
         main_layout.addStretch(1)
         
         # Section 2: Export button (Raporla)
         self.export_button = ExportButton()
-        # CHANGE: Standardized height
+        # FIX: Use setFixedSize to absolutely prevent shrinking
         self.export_button.setFixedHeight(45)
+        self.export_button.setFixedWidth(120)  # FIX: Fixed width prevents shrinking
         main_layout.addWidget(self.export_button)
         
         # Section 3: Comment toggle button (YORUM EKLE)
         self.comment_button = QPushButton(config.Labels.ADD_COMMENT)
-        self.comment_button.setFixedHeight(45)  # CHANGE: Standardized height
-        self.comment_button.setMinimumWidth(120)
+        # FIX: Use setFixedSize to absolutely prevent shrinking
+        self.comment_button.setFixedHeight(45)
+        self.comment_button.setFixedWidth(130)  # FIX: Fixed width prevents shrinking
         self.comment_button.setStyleSheet(f"""
             QPushButton {{
                 background-color: {config.Colors.INPUT_BACKGROUND};
                 color: {config.Colors.TEXT_PRIMARY};
                 border: 2px solid {config.Colors.BORDER_COLOR};
                 border-radius: 5px;
-                padding: 10px 20px;
+                padding: 10px 15px;
                 font-size: {config.FONT_SIZE}pt;
                 font-weight: bold;
             }}
@@ -193,15 +202,16 @@ class ContentWidget(QWidget):
         
         # Section 4: Proceed button (İlerle >)
         self.proceed_button = QPushButton(config.Labels.PROCEED)
-        self.proceed_button.setFixedHeight(45)  # CHANGE: Standardized height
-        self.proceed_button.setMinimumWidth(100)
+        # FIX: Use setFixedSize to absolutely prevent shrinking
+        self.proceed_button.setFixedHeight(45)
+        self.proceed_button.setFixedWidth(130)  # FIX: Fixed width prevents shrinking
         self.proceed_button.setStyleSheet(f"""
             QPushButton {{
                 background-color: {config.Colors.BUTTON_PRIMARY};
                 color: {config.Colors.TEXT_PRIMARY};
                 border: none;
                 border-radius: 5px;
-                padding: 10px 20px;
+                padding: 10px 15px;
                 font-size: {config.FONT_SIZE}pt;
                 font-weight: bold;
             }}

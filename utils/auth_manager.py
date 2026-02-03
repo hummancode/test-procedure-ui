@@ -83,7 +83,7 @@ class AuthManager:
     """
     
     # Path to users file
-    USERS_FILE = "data/users.json"
+    USERS_FILE = Path(config.USERS_FILE_PATH)
     
     def __init__(self):
         """Initialize AuthManager and load users from file."""
