@@ -1,6 +1,10 @@
 """
 Settings Manager
 Handles persistent application settings (saves to disk)
+
+Extended with session metadata memory feature:
+- Remembers last entered session metadata values
+- Pre-populates fields for faster entry
 """
 import json
 import os
@@ -15,6 +19,9 @@ class SettingsManager:
     """
     Manages application settings that persist between sessions.
     Settings are saved to a JSON file in the application directory.
+    
+    Extended Features:
+    - Session metadata memory (remembers last entered values)
     """
     
     # Default settings file location
@@ -52,7 +59,9 @@ class SettingsManager:
             'update_interval': self.DEFAULT_UPDATE_INTERVAL,
             'last_station': '',
             'window_geometry': None,
-            'version': '1.0'
+            'version': '1.0',
+            # NEW: Session metadata memory
+            'last_session_metadata': {}
         }
         self._save_settings()
     
@@ -127,6 +136,42 @@ class SettingsManager:
         self.settings['update_interval'] = interval
         self._save_settings()
         logger.info(f"Update interval saved: {interval} seconds")
+    
+    # =========================================================================
+    # NEW: Session Metadata Memory
+    # =========================================================================
+    
+    def get_last_session_metadata(self) -> Dict[str, Any]:
+        """
+        Get last entered session metadata values.
+        
+        Used to pre-populate the TestSessionSetupDialog for faster entry.
+        
+        Returns:
+            Dictionary with last session metadata, or empty dict if none
+        """
+        return self.settings.get('last_session_metadata', {})
+    
+    def set_last_session_metadata(self, metadata: Dict[str, Any]):
+        """
+        Save session metadata for next session.
+        
+        Args:
+            metadata: Dictionary with session metadata values
+        """
+        self.settings['last_session_metadata'] = metadata
+        self._save_settings()
+        logger.info("Last session metadata saved for quick entry")
+    
+    def clear_last_session_metadata(self):
+        """Clear saved session metadata"""
+        self.settings['last_session_metadata'] = {}
+        self._save_settings()
+        logger.info("Last session metadata cleared")
+    
+    # =========================================================================
+    # General Methods
+    # =========================================================================
     
     def reset_to_defaults(self):
         """Reset all settings to default values"""

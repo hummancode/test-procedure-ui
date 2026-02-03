@@ -1,14 +1,18 @@
 # Python
 __pycache__/
 *.py[cod]
-*.class
+*$py.class
 *.so
 .Python
 env/
 venv/
 *.egg-info/
-dist/
+*.egg
+
+# PyInstaller build artifacts
 build/
+dist/
+*.spec
 
 # IDE
 .vscode/
@@ -17,19 +21,31 @@ build/
 *.swo
 *~
 
+# Spyder
+.spyproject/
+.spyderproject
+
 # Data files (don't commit autosaves/exports)
 data/autosave/*
 data/exports/*
 !data/autosave/.gitkeep
 !data/exports/.gitkeep
-codebase.md*
+
 # Logs
 logs/*.log
 *.log
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Spyder
-.spyproject/
+# Runtime/settings files (auto-generated)
+app_settings.json
+
+# Large files
+*.exe
+codebase.md
+
+# Conda
+*.conda

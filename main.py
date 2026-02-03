@@ -2,19 +2,27 @@
 
 """
 Test Procedure UI - Main Entry Point
-UPDATED: Added user authentication system
-Phase 1: Simple 2-step demo with Modern UI
-FIXED: Correct path resolution for EXE distribution
+
+Flow:
+1. LoginDialog - User authentication (operator/admin selection)
+2. TestSessionSetupDialog - Collect test session metadata (NEW)
+3. MainWindow - Test execution
+
+Features:
+- User authentication (3-role system)
+- Extended session metadata entry with memory
+- Dark theme UI
 """
 import sys
 import os
 from pathlib import Path
-from PyQt5.QtWidgets import QApplication, QDialog
-from qt_material import apply_stylesheet
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox
 from ui.main_window import MainWindow
 from utils.logger import setup_logger
 from utils.auth_manager import AuthManager
+from utils.settings_manager import SettingsManager
 from ui.dialogs.login_dialog import LoginDialog
+from ui.dialogs.test_session_setup_dialog import TestSessionSetupDialog
 import config
 import qdarkstyle
 
@@ -44,7 +52,7 @@ def get_application_path():
 def main():
     """Main application entry point"""
     logger.info("=" * 60)
-    logger.info("Test Procedure Application Starting (with Authentication)")
+    logger.info("Test Procedure Application Starting")
     logger.info("=" * 60)
     
     # Get application base path
@@ -56,11 +64,14 @@ def main():
     app.setApplicationName(config.WINDOW_TITLE)
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
     
-    # ========================================================================
-    # NEW: User Authentication
-    # ========================================================================
-    logger.info("Showing login dialog...")
+    # Initialize managers
     auth_manager = AuthManager()
+    settings_manager = SettingsManager()
+    
+    # ========================================================================
+    # STEP 1: User Authentication
+    # ========================================================================
+    logger.info("Step 1: Showing login dialog...")
     login_dialog = LoginDialog(auth_manager)
     
     if login_dialog.exec_() != QDialog.Accepted:
@@ -73,9 +84,37 @@ def main():
     logger.info(f"User authenticated: {user_name} (Role: {user_role})")
     
     # ========================================================================
-    # Create main window (with auth manager)
+    # STEP 2: Test Session Setup (NEW - Collect Metadata)
     # ========================================================================
+    logger.info("Step 2: Showing test session setup dialog...")
+    setup_dialog = TestSessionSetupDialog(settings_manager)
+    
+    if setup_dialog.exec_() != QDialog.Accepted:
+        logger.info("Session setup cancelled by user - exiting application")
+        sys.exit(0)
+    
+    # Get the metadata from the dialog
+    session_metadata = setup_dialog.get_metadata()
+    logger.info(f"Session metadata collected: {session_metadata}")
+    
+    # Create test_info dict for backwards compatibility with MainWindow
+    test_info = {
+        'stock_number': session_metadata.stok_no,
+        'serial_number': session_metadata.seri_no,
+        'station_number': session_metadata.istasyon,
+        'sip_code': session_metadata.sip_code
+    }
+    
+    # ========================================================================
+    # STEP 3: Create Main Window
+    # ========================================================================
+    logger.info("Step 3: Creating main window...")
     window = MainWindow(auth_manager=auth_manager)
+    
+    # Pass the full metadata to the window (for Excel export)
+    if hasattr(window, 'test_manager') and window.test_manager:
+        # Store metadata in test_manager for later use
+        window.test_manager.session_metadata = session_metadata
     
     # Update window title based on user role
     if auth_manager.is_admin():
@@ -86,29 +125,27 @@ def main():
         logger.info("Operator mode - sequential navigation only")
     
     # ========================================================================
-    # Load test procedure
+    # STEP 4: Load Test Procedure
     # ========================================================================
-    # Test info - in real application, this would come from user input or database
-    test_info = {
-        'stock_number': 'ABC123',
-        'serial_number': '456789',
-        'station_number': 'ST-01',
-        'sip_code': 'X99'
-    }
-    
-    # Load test procedure - USE ABSOLUTE PATH
     test_file = app_path / 'data' / 'sample_test.json'
     logger.info(f"Loading test file: {test_file}")
     
     if not test_file.exists():
         logger.error(f"Test file not found: {test_file}")
-        logger.error(f"Current working directory: {os.getcwd()}")
-        logger.error(f"Application path: {app_path}")
-        logger.error(f"Contents of app path: {list(app_path.iterdir())}")
+        QMessageBox.critical(
+            None, 
+            "Hata", 
+            f"Test dosyası bulunamadı:\n{test_file}"
+        )
         sys.exit(1)
     
     if window.load_test_procedure(str(test_file), test_info):
         logger.info(f"Loaded test procedure: {test_file}")
+        
+        # Attach metadata to the session after loading
+        if window.test_manager and window.test_manager.session:
+            window.test_manager.session.metadata = session_metadata
+            logger.info("Session metadata attached to test session")
         
         # Start the test
         window.start_test()
@@ -120,6 +157,11 @@ def main():
         logger.info("Use 'Dosya > Güncelleme Ayarları...' to configure data output")
     else:
         logger.error("Failed to load test procedure. Exiting.")
+        QMessageBox.critical(
+            None,
+            "Hata",
+            "Test prosedürü yüklenemedi. Uygulama kapatılıyor."
+        )
         sys.exit(1)
     
     # Run application event loop

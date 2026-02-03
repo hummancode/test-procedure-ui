@@ -3,5 +3,25 @@
   "last_station": "",
   "window_geometry": null,
   "version": "1.0",
-  "update_interval": 10
+  "update_interval": 10,
+  "last_session_metadata": {
+    "stok_no": "1",
+    "opsiyonel_stok_no": "12",
+    "tanim": "21",
+    "teu_udk": "2",
+    "seri_no": "2",
+    "revizyon_261": "assafgggg",
+    "test_donanimi_revizyon": "as",
+    "test_yazilimi_revizyon": "21",
+    "is_tipi_no": "12",
+    "kay_yazilimi_versiyon": "AS",
+    "sky_yazilimi_versiyon": "12",
+    "istasyon": "",
+    "sip_code": "",
+    "fluke_esa620_kalibrasyon": "2027-01-31",
+    "italsea_7proglcd_kalibrasyon": "2000-01-01",
+    "geratech_kalibrasyon": "2000-01-01",
+    "iba_magicmax_kalibrasyon": "2000-01-01",
+    "iba_primus_a_kalibrasyon": "2000-01-31"
+  }
 }
