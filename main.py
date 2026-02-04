@@ -64,7 +64,15 @@ def get_application_path():
         application_path = Path(__file__).parent
     
     return application_path
-
+def get_bundled_path(relative_path: str) -> Path:
+    """Get path to BUNDLED files (read-only, inside _internal for PyInstaller)"""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller extracts bundled files to _MEIPASS
+        base = Path(sys._MEIPASS)
+    else:
+        # Development mode - same as project root
+        base = Path(__file__).parent
+    return base / relative_path
 
 def main():
     """Main application entry point"""
@@ -154,7 +162,8 @@ def main():
     # ========================================================================
     # STEP 4: Load Test Procedure
     # ========================================================================
-    test_file = app_path / 'data' / 'sample_test.json'
+    test_file = get_bundled_path('data/sample_test.json')
+
     logger.info(f"Loading test file: {test_file}")
     
     if not test_file.exists():

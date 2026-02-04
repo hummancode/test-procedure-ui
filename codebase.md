@@ -75,8 +75,8 @@ codebase.md
     "is_tipi_no": "12",
     "kay_yazilimi_versiyon": "AS",
     "sky_yazilimi_versiyon": "12",
-    "istasyon": "",
-    "sip_code": "",
+    "istasyon": "123",
+    "sip_code": "123",
     "fluke_esa620_kalibrasyon": "2027-01-01",
     "italsea_7proglcd_kalibrasyon": "2027-01-01",
     "geratech_kalibrasyon": "2027-01-01",
@@ -271,11 +271,30 @@ pause
 # config.py
 
 ```py
-"""
-Configuration and Constants for Test Procedure UI
-Phase 2 - Updated with larger fonts, new UI elements, and continuous writing
-"""
-
+import sys
+from pathlib import Path
+def _resolve_path(relative_path: str) -> str:
+    """Resolve relative path for both development and PyInstaller"""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller bundled path
+        base = Path(sys._MEIPASS)
+        if (base / relative_path).exists():
+            return str(base / relative_path)
+        # Fallback to executable directory
+        return str(Path(sys.executable).parent / relative_path)
+    else:
+        # Development mode - __file__ is config.py in project root
+        return str(Path(__file__).parent / relative_path)
+def _get_writable_path(relative_path: str) -> str:
+    """Get writable path (always in executable/project directory, never in _MEIPASS)"""
+    if getattr(sys, 'frozen', False):
+        return str(Path(sys.executable).parent / relative_path)
+    else:
+        return str(Path(__file__).parent / relative_path)
+    
+SETTINGS_FILE = _get_writable_path("app_settings.json")
+DEFAULT_UPDATE_FOLDER = _get_writable_path("data/updates")
+DEFAULT_EXPORT_FOLDER = _get_writable_path("data/exports")
 # ============================================================================
 # COLOR PALETTE (Dark Blue Theme)
 # ============================================================================
@@ -503,7 +522,8 @@ SIDEBAR_ANIMATION_DURATION = 200  # milliseconds
 
 IMAGE_MAX_SIZE_MB = 10
 SUPPORTED_IMAGE_FORMATS = ['.png', '.jpg', '.jpeg', '.bmp']
-PLACEHOLDER_IMAGE_PATH = "resources/images/placeholder.png"
+PLACEHOLDER_IMAGE_PATH = _resolve_path("resources/images/placeholder.png")
+
 
 
 # ============================================================================
@@ -536,8 +556,8 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 # STATUS EMOJIS
 # ============================================================================
 
-ICON_HAPPY = "resources/icons/happy.png"
-ICON_SAD = "resources/icons/sad.png"
+ICON_HAPPY = _resolve_path("resources/icons/happy.png")
+ICON_SAD = _resolve_path("resources/icons/sad.png")
 
 
 # ============================================================================
@@ -627,7 +647,8 @@ class UserRole:
 DEFAULT_ADMIN_PASSWORD = "admin123"  # Change in production!
 
 # Path to users file
-USERS_FILE_PATH = "data/users.json"
+USERS_FILE_PATH = _resolve_path("data/users.json")
+
 ```
 
 # data\sample_test.json
@@ -695,14 +716,14 @@ USERS_FILE_PATH = "data/users.json"
 
 ```json
 {
-  "session_id": "20260203_142509",
+  "session_id": "20260203_150915",
   "stock_number": "1",
   "serial_number": "2",
   "station_number": "",
   "sip_code": "",
-  "start_time": "2026-02-03T14:25:09.275300",
+  "start_time": "2026-02-03T15:09:15.332709",
   "end_time": null,
-  "duration_seconds": 20,
+  "duration_seconds": 66770,
   "completion_percentage": 0.0,
   "passed_count": 0,
   "failed_count": 0,
@@ -711,7 +732,7 @@ USERS_FILE_PATH = "data/users.json"
       "step_id": 1,
       "name": "Görsel Kontrol - Ön Panel1",
       "status": "in_progress",
-      "start_time": "03/02/2026 14:25:09",
+      "start_time": "03/02/2026 15:09:15",
       "actual_duration": null,
       "result_value": null,
       "comment": null,
@@ -782,7 +803,199 @@ USERS_FILE_PATH = "data/users.json"
     "istasyon": "",
     "sip_code": ""
   },
-  "last_updated": "2026-02-03T14:25:29.293021",
+  "last_updated": "2026-02-04T09:42:06.159223",
+  "file_version": "1.0"
+}
+```
+
+# data\updates\GuncellemeRaporu_123_20260203_1.json
+
+```json
+{
+  "session_id": "20260203_150932",
+  "stock_number": "1",
+  "serial_number": "2",
+  "station_number": "123",
+  "sip_code": "123",
+  "start_time": "2026-02-03T15:09:32.320789",
+  "end_time": null,
+  "duration_seconds": 66750,
+  "completion_percentage": 0.0,
+  "passed_count": 0,
+  "failed_count": 0,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "Görsel Kontrol - Ön Panel1",
+      "status": "in_progress",
+      "start_time": "03/02/2026 15:09:32",
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 15,
+      "completed_by": null,
+      "input_validation": {}
+    },
+    {
+      "step_id": 2,
+      "name": "Ara Adım - Bilgilendirme",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 10,
+      "completed_by": null,
+      "input_validation": {}
+    },
+    {
+      "step_id": 3,
+      "name": "Voltaj Ölçümü",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 120,
+      "completed_by": null,
+      "input_validation": {
+        "max": 12.5,
+        "min": 11.5
+      }
+    },
+    {
+      "step_id": 4,
+      "name": "Yeni Adım 4",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 60,
+      "completed_by": null,
+      "input_validation": {
+        "max": 100.0,
+        "min": 0.0
+      }
+    }
+  ],
+  "metadata": {
+    "stok_no": "1",
+    "opsiyonel_stok_no": "2312",
+    "tanim": "21",
+    "teu_udk": "2",
+    "seri_no": "2",
+    "revizyon_261": "assafgggg",
+    "test_donanimi_revizyon": "as",
+    "test_yazilimi_revizyon": "21",
+    "is_tipi_no": "12",
+    "kay_yazilimi_versiyon": "AS",
+    "sky_yazilimi_versiyon": "12",
+    "fluke_esa620_kalibrasyon": "2027-01-01",
+    "italsea_7proglcd_kalibrasyon": "2027-01-01",
+    "geratech_kalibrasyon": "2027-01-01",
+    "iba_magicmax_kalibrasyon": "2027-01-01",
+    "iba_primus_a_kalibrasyon": "2027-01-01",
+    "istasyon": "123",
+    "sip_code": "123"
+  },
+  "last_updated": "2026-02-04T09:42:03.158137",
+  "file_version": "1.0"
+}
+```
+
+# data\updates\GuncellemeRaporu_123_20260204_1.json
+
+```json
+{
+  "session_id": "20260204_094151",
+  "stock_number": "1",
+  "serial_number": "2",
+  "station_number": "123",
+  "sip_code": "123",
+  "start_time": "2026-02-04T09:41:51.430564",
+  "end_time": null,
+  "duration_seconds": 15,
+  "completion_percentage": 50.0,
+  "passed_count": 1,
+  "failed_count": 1,
+  "steps": [
+    {
+      "step_id": 1,
+      "name": "Görsel Kontrol - Ön Panel1",
+      "status": "failed",
+      "start_time": "04/02/2026 09:41:51",
+      "actual_duration": 8,
+      "result_value": "FAIL",
+      "comment": "",
+      "time_limit": 15,
+      "completed_by": "Sistem Yöneticisi",
+      "input_validation": {}
+    },
+    {
+      "step_id": 2,
+      "name": "Ara Adım - Bilgilendirme",
+      "status": "passed",
+      "start_time": "04/02/2026 09:42:00",
+      "actual_duration": 0,
+      "result_value": null,
+      "comment": "",
+      "time_limit": 10,
+      "completed_by": "Sistem Yöneticisi",
+      "input_validation": {}
+    },
+    {
+      "step_id": 3,
+      "name": "Voltaj Ölçümü",
+      "status": "in_progress",
+      "start_time": "04/02/2026 09:42:00",
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 120,
+      "completed_by": null,
+      "input_validation": {
+        "max": 12.5,
+        "min": 11.5
+      }
+    },
+    {
+      "step_id": 4,
+      "name": "Yeni Adım 4",
+      "status": "not_started",
+      "start_time": null,
+      "actual_duration": null,
+      "result_value": null,
+      "comment": null,
+      "time_limit": 60,
+      "completed_by": null,
+      "input_validation": {
+        "max": 100.0,
+        "min": 0.0
+      }
+    }
+  ],
+  "metadata": {
+    "stok_no": "1",
+    "opsiyonel_stok_no": "2312",
+    "tanim": "21",
+    "teu_udk": "2",
+    "seri_no": "2",
+    "revizyon_261": "assafgggg",
+    "test_donanimi_revizyon": "as",
+    "test_yazilimi_revizyon": "21",
+    "is_tipi_no": "12",
+    "kay_yazilimi_versiyon": "AS",
+    "sky_yazilimi_versiyon": "12",
+    "fluke_esa620_kalibrasyon": "2027-01-01",
+    "italsea_7proglcd_kalibrasyon": "2027-01-01",
+    "geratech_kalibrasyon": "2027-01-01",
+    "iba_magicmax_kalibrasyon": "2027-01-01",
+    "iba_primus_a_kalibrasyon": "2027-01-01",
+    "istasyon": "123",
+    "sip_code": "123"
+  },
+  "last_updated": "2026-02-04T09:42:07.302110",
   "file_version": "1.0"
 }
 ```
@@ -1846,10 +2059,27 @@ from ui.dialogs.login_dialog import LoginDialog
 from ui.dialogs.test_session_setup_dialog import TestSessionSetupDialog
 import config
 import qdarkstyle
+import atexit
+import signal
 
 # Setup logger
 logger = setup_logger('main')
 
+# Global reference for cleanup
+_main_window = None
+
+def cleanup():
+    """Cleanup function called on exit"""
+    global _main_window
+    logger.info("Application cleanup - stopping all timers")
+    if _main_window is not None:
+        try:
+            if hasattr(_main_window, 'test_manager') and _main_window.test_manager:
+                if hasattr(_main_window.test_manager, 'timer'):
+                    _main_window.test_manager.timer.stop()
+                    logger.info("Timer stopped")
+        except Exception as e:
+            logger.error(f"Cleanup error: {e}")
 
 def get_application_path():
     """
@@ -1868,13 +2098,30 @@ def get_application_path():
         application_path = Path(__file__).parent
     
     return application_path
-
+def get_bundled_path(relative_path: str) -> Path:
+    """Get path to BUNDLED files (read-only, inside _internal for PyInstaller)"""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller extracts bundled files to _MEIPASS
+        base = Path(sys._MEIPASS)
+    else:
+        # Development mode - same as project root
+        base = Path(__file__).parent
+    return base / relative_path
 
 def main():
     """Main application entry point"""
+    global _main_window
+    
     logger.info("=" * 60)
     logger.info("Test Procedure Application Starting")
     logger.info("=" * 60)
+    
+    # ========================================================================
+    # Register cleanup handlers FIRST (before anything else)
+    # ========================================================================
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
+    signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0))
     
     # Get application base path
     app_path = get_application_path()
@@ -1931,6 +2178,7 @@ def main():
     # ========================================================================
     logger.info("Step 3: Creating main window...")
     window = MainWindow(auth_manager=auth_manager)
+    _main_window = window  # Store global reference for cleanup
     
     # Pass the full metadata to the window (for Excel export)
     if hasattr(window, 'test_manager') and window.test_manager:
@@ -1948,7 +2196,8 @@ def main():
     # ========================================================================
     # STEP 4: Load Test Procedure
     # ========================================================================
-    test_file = app_path / 'data' / 'sample_test.json'
+    test_file = get_bundled_path('data/sample_test.json')
+
     logger.info(f"Loading test file: {test_file}")
     
     if not test_file.exists():
@@ -1985,7 +2234,9 @@ def main():
         )
         sys.exit(1)
     
+    # ========================================================================
     # Run application event loop
+    # ========================================================================
     exit_code = app.exec_()
     
     logger.info("=" * 60)
@@ -7277,6 +7528,20 @@ class MainWindow(QMainWindow):
             
         except Exception as e:
             logger.error(f"Failed to save steps to file: {e}")
+    def closeEvent(self, event):
+        """Handle window close - ensure clean shutdown"""
+        logger.info("MainWindow closing - stopping timers")
+        
+        # Stop the test manager timer
+        if hasattr(self, 'test_manager') and self.test_manager:
+            if hasattr(self.test_manager, 'timer'):
+                self.test_manager.timer.stop()
+            # Write final update
+            if hasattr(self.test_manager, 'continuous_writer'):
+                self.test_manager.continuous_writer.write_update()
+        
+        event.accept()
+        logger.info("MainWindow closed cleanly")
 ```
 
 # ui\widgets\__init__.py
@@ -9627,7 +9892,7 @@ class AuthManager:
     """
     
     # Path to users file
-    USERS_FILE = "data/users.json"
+    USERS_FILE = Path(config.USERS_FILE_PATH)
     
     def __init__(self):
         """Initialize AuthManager and load users from file."""
@@ -10215,6 +10480,7 @@ import os
 from typing import Optional, Dict, Any
 from pathlib import Path
 from utils.logger import setup_logger
+import config
 
 logger = setup_logger(__name__)
 
@@ -10229,14 +10495,14 @@ class SettingsManager:
     """
     
     # Default settings file location
-    SETTINGS_FILE = "app_settings.json"
+    #SETTINGS_FILE = "app_settings.json"
     
     # Default values
-    DEFAULT_UPDATE_FOLDER = "data/updates"
+    DEFAULT_UPDATE_FOLDER = config.DEFAULT_UPDATE_FOLDER
     DEFAULT_UPDATE_INTERVAL = 10  # seconds
     
     def __init__(self):
-        self.settings_path = self.SETTINGS_FILE
+        self.settings_path = config.SETTINGS_FILE
         self.settings: Dict[str, Any] = {}
         self._load_settings()
         

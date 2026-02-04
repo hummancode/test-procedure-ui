@@ -155,7 +155,7 @@ class TestStepEditorDialog(QDialog):
     def _init_ui(self):
         """Initialize the user interface"""
         self.setWindowTitle("Test Adımları Editörü")
-        self.setMinimumSize(1000, 700)
+        self.setMinimumSize(1400, 1000)
         self.setModal(True)
         
         # Set dark theme
@@ -287,7 +287,7 @@ class TestStepEditorDialog(QDialog):
         splitter.addWidget(right_panel)
         
         # Set splitter proportions (30% list, 70% details)
-        splitter.setSizes([300, 700])
+        splitter.setSizes([450, 1000])
         
         main_layout.addWidget(splitter, 1)
         
@@ -313,7 +313,7 @@ class TestStepEditorDialog(QDialog):
         
         # Step list
         self.step_list = QListWidget()
-        self.step_list.setMinimumWidth(250)
+        self.step_list.setMinimumWidth(350)
         self.step_list.currentRowChanged.connect(self._on_step_selected)
         layout.addWidget(self.step_list, 1)
         
@@ -443,14 +443,14 @@ class TestStepEditorDialog(QDialog):
         # Image Path
         image_layout = QHBoxLayout()
         image_label = QLabel("Görsel Yolu:")
-        image_label.setFixedWidth(120)
+        image_label.setFixedWidth(130)
         self.image_path_input = QLineEdit()
         self.image_path_input.setPlaceholderText("resources/images/step_xxx.png")
         self.image_path_input.setEnabled(self.is_developer)
         self.image_path_input.textChanged.connect(self._on_field_changed)
         
         browse_btn = QPushButton("Gözat...")
-        browse_btn.setFixedWidth(100)
+        browse_btn.setFixedWidth(150)
         browse_btn.setEnabled(self.is_developer)
         browse_btn.clicked.connect(self._on_browse_image)
         

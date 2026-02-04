@@ -17,6 +17,8 @@ from persistence import ContinuousWriter
 import config
 from utils.logger import setup_logger
 from ui.dialogs.test_step_editor_dialog import TestStepEditorDialog
+from ui.dialogs.user_management_dialog import UserManagementDialog
+
 logger = setup_logger(__name__)
 
 
@@ -204,6 +206,14 @@ class MainWindow(QMainWindow):
                 self.edit_steps_action.triggered.connect(self._on_edit_test_steps)
                 self.developer_menu.addAction(self.edit_steps_action)
                 
+                self.developer_menu.addSeparator()
+                
+                # NEW: User management action
+                self.user_management_action = QAction("Kullanıcı Yönetimi...", self)
+                self.user_management_action.setShortcut("Ctrl+Shift+U")
+                self.user_management_action.triggered.connect(self._on_user_management)
+                self.developer_menu.addAction(self.user_management_action)
+                
                 logger.debug("Developer menu created")
     def _create_status_bar(self):
         """Create status bar to show continuous writer status"""
@@ -274,7 +284,26 @@ class MainWindow(QMainWindow):
         dialog = SwitchUserDialog(self.auth_manager, self)
         dialog.user_switched.connect(self._on_user_switched)
         dialog.exec_()
-    
+    def _on_user_management(self):
+        """
+        Open user management dialog.
+        
+        Triggered by:
+        - Menu: Geliştirici → Kullanıcı Yönetimi...
+        - Shortcut: Ctrl+Shift+U
+        """
+        if not self.auth_manager:
+            return
+        
+        
+        dialog = UserManagementDialog(self.auth_manager, self)
+        dialog.users_updated.connect(self._on_users_updated)
+        dialog.exec_()
+
+    def _on_users_updated(self):
+        """Handle users list update from user management dialog."""
+        logger.info("Users list updated")
+        self.status_bar.showMessage("Kullanıcı listesi güncellendi", 3000)
     def _on_user_switched(self, new_role: str):
         """
         Handle user role change.
@@ -283,10 +312,11 @@ class MainWindow(QMainWindow):
         - Menu display
         - Window title
         - Sidebar clickable state
+        - Developer menu visibility
         - Status bar message
         
         Args:
-            new_role: The new user role (config.UserRole.ADMIN or OPERATOR)
+            new_role: The new user role (config.UserRole.ADMIN, OPERATOR, or DEVELOPER)
         """
         logger.info(f"User role changed to: {new_role}")
         
@@ -295,19 +325,64 @@ class MainWindow(QMainWindow):
         
         # Update sidebar clickable state based on new role
         if hasattr(self, 'sidebar') and self.sidebar is not None:
-            is_admin = self.auth_manager.is_admin()
-            self.sidebar.set_clickable(is_admin)
+            can_navigate = self.auth_manager.can_navigate_back()
+            self.sidebar.set_clickable(can_navigate)
             
-            if is_admin:
-                logger.info("✓ Sidebar navigation enabled (admin mode)")
+            if can_navigate:
+                logger.info("✓ Sidebar navigation enabled (admin/developer mode)")
             else:
                 logger.info("✗ Sidebar navigation disabled (operator mode)")
         
+        # Update Developer menu visibility
+        self._update_developer_menu()
+        
         # Show status bar message
         if hasattr(self, 'status_bar') and self.status_bar:
-            role_text = "Yönetici" if new_role == config.UserRole.ADMIN else "Operatör"
+            role_text = {
+                config.UserRole.ADMIN: "Yönetici",
+                config.UserRole.OPERATOR: "Operatör",
+                config.UserRole.DEVELOPER: "Geliştirici"
+            }.get(new_role, new_role)
             self.status_bar.showMessage(f"Kullanıcı değiştirildi: {role_text}", 5000)
-    
+    def _update_developer_menu(self):
+        """
+        Show or hide Developer menu based on current user role.
+        
+        Called when user switches role.
+        """
+        menubar = self.menuBar()
+        role = self.auth_manager.get_role()
+        is_privileged = role in [config.UserRole.DEVELOPER, config.UserRole.ADMIN]
+        
+        # Check if developer menu exists
+        has_dev_menu = hasattr(self, 'developer_menu') and self.developer_menu is not None
+        
+        if is_privileged and not has_dev_menu:
+            # Add Developer menu
+            self.developer_menu = menubar.addMenu("Geliştirici")
+            
+            # Edit test steps action
+            self.edit_steps_action = QAction("Test Adımlarını Düzenle...", self)
+            self.edit_steps_action.setShortcut("Ctrl+E")
+            self.edit_steps_action.triggered.connect(self._on_edit_test_steps)
+            self.developer_menu.addAction(self.edit_steps_action)
+            
+            self.developer_menu.addSeparator()
+            
+            # User management action
+            self.user_management_action = QAction("Kullanıcı Yönetimi...", self)
+            self.user_management_action.setShortcut("Ctrl+Shift+U")
+            self.user_management_action.triggered.connect(self._on_user_management)
+            self.developer_menu.addAction(self.user_management_action)
+            
+            logger.debug("Developer menu added after user switch")
+            
+        elif not is_privileged and has_dev_menu:
+            # Remove Developer menu
+            menubar.removeAction(self.developer_menu.menuAction())
+            self.developer_menu = None
+            
+            logger.debug("Developer menu removed after user switch")    
     # ========================================================================
     # Existing Methods
     # ========================================================================

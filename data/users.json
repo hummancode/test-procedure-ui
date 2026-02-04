@@ -38,14 +38,6 @@
                 "active": true
             },
             {
-                "username": "op3",
-                "password_hash": "",
-                "display_name": "Mehmet Demir",
-                "employee_id": "OP003",
-                "department": "Üretim Hattı B",
-                "active": true
-            },
-            {
                 "username": "op4",
                 "password_hash": "",
                 "display_name": "Fatma Öztürk",
@@ -59,6 +51,22 @@
                 "display_name": "Mustafa Çelik",
                 "employee_id": "OP005",
                 "department": "Üretim Hattı C",
+                "active": true
+            },
+            {
+                "username": "op7",
+                "password_hash": "",
+                "display_name": "Cumhur Özbaş",
+                "employee_id": "215211",
+                "department": "STDMMM",
+                "active": true
+            },
+            {
+                "username": "opxx",
+                "password_hash": "",
+                "display_name": "Xman",
+                "employee_id": "Xno",
+                "department": "Xdep",
                 "active": true
             }
         ],
@@ -109,11 +117,5 @@
             "can_edit_test_steps": true,
             "requires_password": true
         }
-    },
-    "_passwords_for_testing": {
-        "admin": "admin123",
-        "admin2": "admin123",
-        "dev1": "abc123",
-        "dev2": "abc123"
     }
 }

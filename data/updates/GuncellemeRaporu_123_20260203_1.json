@@ -1,12 +1,12 @@
 {
-  "session_id": "20260203_150932",
+  "session_id": "20260203_160459",
   "stock_number": "1",
   "serial_number": "2",
   "station_number": "123",
   "sip_code": "123",
-  "start_time": "2026-02-03T15:09:32.320789",
+  "start_time": "2026-02-03T16:04:59.931439",
   "end_time": null,
-  "duration_seconds": 4,
+  "duration_seconds": 67280,
   "completion_percentage": 0.0,
   "passed_count": 0,
   "failed_count": 0,
@@ -15,7 +15,7 @@
       "step_id": 1,
       "name": "Görsel Kontrol - Ön Panel1",
       "status": "in_progress",
-      "start_time": "03/02/2026 15:09:32",
+      "start_time": "03/02/2026 16:04:59",
       "actual_duration": null,
       "result_value": null,
       "comment": null,
@@ -86,6 +86,6 @@
     "istasyon": "123",
     "sip_code": "123"
   },
-  "last_updated": "2026-02-03T15:09:36.504207",
+  "last_updated": "2026-02-04T10:46:20.264623",
   "file_version": "1.0"
 }
